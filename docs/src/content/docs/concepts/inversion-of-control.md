@@ -38,7 +38,7 @@ This says: "I need a value called `standaardpremie`. The minister should set it 
 Two optional fields say more about who fills the term, and both are properties of the law rather than of the corpus:
 
 - **`expected_source`** names the regulation the article itself points at, such as `Regeling zorgverzekering`, with a BWB id when the text carries one. Whether that regulation is currently in the corpus is a separate question, because that changes without the law changing.
-- **`decided_per_case_by`** names the authority that fills the norm in the individual case while no general specification exists, with the article making it competent. That answer needs a motivation under Awb 3:46 and forms part of the *besluit* rather than a ground for it, which is what separates a discretionary power from a value that is merely missing.
+- **`decided_per_case_by`** marks a norm that an authority fills in the individual case while no general specification exists, and says in words who that is, with the article making it competent. That answer needs a motivation under Awb 3:46 and forms part of the *besluit* rather than a ground for it, which is what separates a discretionary power from a value that is merely missing. The engine does not read who from those words: the term's own `competent_authority` says it, or else the authority that executes the article ([Competent Authority](/concepts/competent-authority#who-gives-a-finding)).
 
 ### The implementing regulation fills it
 

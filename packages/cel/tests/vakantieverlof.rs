@@ -462,10 +462,11 @@ fn the_decision_takes_the_application_and_the_cell_and_the_policy_says_what_the_
     }
     // Where the cell gives no answer, the policy lets the head judge, with
     // an open term of its own (policy art. 3 and 4).
+    let head = cell();
     let findings: Vec<&str> = shape
         .terms
         .iter()
-        .filter(|t| t.is_finding())
+        .filter(|t| t.is_finding(head.authority()))
         .map(|t| t.id.as_str())
         .collect();
     assert_eq!(
@@ -2185,15 +2186,25 @@ fn a_cell_of_another_holder_gives_no_answer_from_the_heads_reduction() {
     let dir = lid_2_dir();
     std::fs::write(
         dir.path().join("cel.yaml"),
-        format!("name: Het hoofd van OBS Het Anker\nanswers:\n  {ONCE}: {REDUCTION}\n"),
+        format!(
+            "name: Het hoofd van OBS Het Anker\ncategory: het hoofd\nanswers:\n  {ONCE}: {REDUCTION}\n"
+        ),
     )
     .unwrap();
     let mut cell = Cell::in_memory(RECORDING_ACTOR, dir.path()).unwrap();
     let app = applied(&mut cell, "2027-02-01", "2027-02-05", "2026-10-13");
-    // The binding asks the cell of the head; this one is not asked, so the
-    // head finds the term.
-    let e = decide(&mut cell, &app.id, &judgement(true, true), "2026-10-20").unwrap_err();
+    // The binding asks the cell of the head of De Klimop; this one is not
+    // asked, so the policy's own term is reached. That term is the finding
+    // of the policy's holder, not of this head: it gives none.
+    let profession = json!({ PROFESSION: true }).as_object().unwrap().clone();
+    let e = decide(&mut cell, &app.id, &profession, "2026-10-20").unwrap_err();
     assert!(e.to_string().contains("no judgement was given"), "{e}");
+    let e = decide(&mut cell, &app.id, &judgement(true, true), "2026-10-20").unwrap_err();
+    assert!(
+        e.to_string()
+            .contains("answered by 'Het hoofd van OBS De Klimop'"),
+        "{e}"
+    );
     let reader = regelrecht_cel::reading::Reader::new(
         RECORDING_ACTOR,
         cell.authority(),

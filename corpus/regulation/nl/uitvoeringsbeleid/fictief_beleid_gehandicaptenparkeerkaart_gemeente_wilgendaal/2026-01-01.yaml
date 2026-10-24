@@ -14,7 +14,7 @@ valid_from: '2026-01-01'
 # Buiten de cellen geeft een koppeling niets. Wat dan geldt, zegt elk artikel
 # zelf, met een eigen open begrip (decided_per_case_by) dat de engine alleen
 # vraagt als de cellen zwijgen: bij artikel 2 tot en met 4 stelt het college
-# het zelf vast, bij artikel 7 geldt wat de GGD in het advies opgeeft.
+# het zelf vast, bij artikel 7 stelt het vast wat het advies opgeeft.
 # Artikel 5 en 6 gaan over het geneeskundig advies.
 url: https://wetten.overheid.nl/BWBR0004826/2026-01-01#Artikel49
 name: Gehandicaptenparkeerkaart in de gemeente Wilgendaal (fictief beleid)
@@ -718,69 +718,40 @@ articles:
     machine_readable:
       # De begrippen van artikel 5 noemen wie bevoegd is: de GGD of de
       # aangewezen deskundige (competent_authority). Zwijgt de cel van de GGD,
-      # dan geldt wat de GGD in het advies opgeeft: een eigen open begrip per
-      # gegeven, niet verplicht. Geeft zij niets op, dan is er geen advies en
-      # oordeelt het college zelf (artikel 6, tweede lid).
+      # dan stelt het college vast wat het schriftelijke advies (artikel 5,
+      # eerste lid) opgeeft: een eigen open begrip per gegeven, niet
+      # verplicht. Geen wet of beleid laat dat oordeel aan de GGD, dus
+      # beantwoordt het college het, de houder van dit beleid. Stelt het
+      # niets vast, dan is er geen advies en oordeelt het college zelf
+      # (artikel 6, tweede lid).
       open_terms:
-        - id: advies_langdurige_loopbeperking_volgens_ggd
-          competent_authority:
-            - name: Gemeentelijke Gezondheidsdienst
-              type: CATEGORY
-            - name: vanwege het gemeentelijk gezag aangewezen deskundige
-              type: CATEGORY
+        - id: advies_langdurige_loopbeperking_volgens_college
           type: boolean
           required: false
-          decided_per_case_by: >-
-            wie het geneeskundig onderzoek verricht: de Gemeentelijke
-            Gezondheidsdienst of de aangewezen deskundige (artikel 3, eerste
-            lid, van de Regeling gehandicaptenparkeerkaart), in het advies
+          decided_per_case_by: het college van burgemeester en wethouders van de gemeente Wilgendaal
           description: >-
-            Wat wie het onderzoek verrichtte in het advies opgeeft over
+            Wat het college vaststelt dat het advies opgeeft over
             een langdurige loopbeperking, als de cel van de GGD geen antwoord geeft.
-        - id: advies_continu_afhankelijk_van_hulp_bestuurder_volgens_ggd
-          competent_authority:
-            - name: Gemeentelijke Gezondheidsdienst
-              type: CATEGORY
-            - name: vanwege het gemeentelijk gezag aangewezen deskundige
-              type: CATEGORY
+        - id: advies_continu_afhankelijk_van_hulp_bestuurder_volgens_college
           type: boolean
           required: false
-          decided_per_case_by: >-
-            wie het geneeskundig onderzoek verricht: de Gemeentelijke
-            Gezondheidsdienst of de aangewezen deskundige (artikel 3, eerste
-            lid, van de Regeling gehandicaptenparkeerkaart), in het advies
+          decided_per_case_by: het college van burgemeester en wethouders van de gemeente Wilgendaal
           description: >-
-            Wat wie het onderzoek verrichtte in het advies opgeeft over
+            Wat het college vaststelt dat het advies opgeeft over
             de hulp van de bestuurder, als de cel van de GGD geen antwoord geeft.
-        - id: advies_permanent_rolstoelgebonden_volgens_ggd
-          competent_authority:
-            - name: Gemeentelijke Gezondheidsdienst
-              type: CATEGORY
-            - name: vanwege het gemeentelijk gezag aangewezen deskundige
-              type: CATEGORY
+        - id: advies_permanent_rolstoelgebonden_volgens_college
           type: boolean
           required: false
-          decided_per_case_by: >-
-            wie het geneeskundig onderzoek verricht: de Gemeentelijke
-            Gezondheidsdienst of de aangewezen deskundige (artikel 3, eerste
-            lid, van de Regeling gehandicaptenparkeerkaart), in het advies
+          decided_per_case_by: het college van burgemeester en wethouders van de gemeente Wilgendaal
           description: >-
-            Wat wie het onderzoek verrichtte in het advies opgeeft over
+            Wat het college vaststelt dat het advies opgeeft over
             rolstoelgebondenheid, als de cel van de GGD geen antwoord geeft.
-        - id: advies_ernstige_beperkingen_andere_dan_loopbeperkingen_volgens_ggd
-          competent_authority:
-            - name: Gemeentelijke Gezondheidsdienst
-              type: CATEGORY
-            - name: vanwege het gemeentelijk gezag aangewezen deskundige
-              type: CATEGORY
+        - id: advies_ernstige_beperkingen_andere_dan_loopbeperkingen_volgens_college
           type: boolean
           required: false
-          decided_per_case_by: >-
-            wie het geneeskundig onderzoek verricht: de Gemeentelijke
-            Gezondheidsdienst of de aangewezen deskundige (artikel 3, eerste
-            lid, van de Regeling gehandicaptenparkeerkaart), in het advies
+          decided_per_case_by: het college van burgemeester en wethouders van de gemeente Wilgendaal
           description: >-
-            Wat wie het onderzoek verrichtte in het advies opgeeft over
+            Wat het college vaststelt dat het advies opgeeft over
             andere ernstige beperkingen, als de cel van de GGD geen antwoord geeft.
       implements:
         - law: fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal
@@ -867,7 +838,7 @@ articles:
                     operation: EQUALS
                     subject: $antwoord_langdurige_loopbeperking
                     value: null
-                  then: $advies_langdurige_loopbeperking_volgens_ggd
+                  then: $advies_langdurige_loopbeperking_volgens_college
               default: $antwoord_langdurige_loopbeperking
           - output: advies_continu_afhankelijk_van_hulp_bestuurder
             value:
@@ -877,7 +848,7 @@ articles:
                     operation: EQUALS
                     subject: $antwoord_continu_afhankelijk_van_hulp_bestuurder
                     value: null
-                  then: $advies_continu_afhankelijk_van_hulp_bestuurder_volgens_ggd
+                  then: $advies_continu_afhankelijk_van_hulp_bestuurder_volgens_college
               default: $antwoord_continu_afhankelijk_van_hulp_bestuurder
           - output: advies_permanent_rolstoelgebonden
             value:
@@ -887,7 +858,7 @@ articles:
                     operation: EQUALS
                     subject: $antwoord_permanent_rolstoelgebonden
                     value: null
-                  then: $advies_permanent_rolstoelgebonden_volgens_ggd
+                  then: $advies_permanent_rolstoelgebonden_volgens_college
               default: $antwoord_permanent_rolstoelgebonden
           - output: advies_ernstige_beperkingen_andere_dan_loopbeperkingen
             value:
@@ -897,5 +868,5 @@ articles:
                     operation: EQUALS
                     subject: $antwoord_ernstige_beperkingen_andere_dan_loopbeperkingen
                     value: null
-                  then: $advies_ernstige_beperkingen_andere_dan_loopbeperkingen_volgens_ggd
+                  then: $advies_ernstige_beperkingen_andere_dan_loopbeperkingen_volgens_college
               default: $antwoord_ernstige_beperkingen_andere_dan_loopbeperkingen

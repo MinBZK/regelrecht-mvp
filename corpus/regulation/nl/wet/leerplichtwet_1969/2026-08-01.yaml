@@ -965,6 +965,12 @@ articles:
       [ref3]: https://wetten.overheid.nl/BWBR0002628#Artikel4c
     url: https://wetten.overheid.nl/BWBR0002628/2026-08-01#Artikel13a
     machine_readable:
+      # Bevoegd gezag (RFC-002): het hoofd verleent het verlof (lid 1 en 2).
+      # Het beantwoordt ook de open begrippen hieronder die het per aanvraag
+      # oordeelt; geen ervan noemt zelf een ander.
+      competent_authority:
+        name: het hoofd
+        type: CATEGORY
       # Wat het hoofd naast de aanvraag nodig heeft om te beslissen. Geen
       # parameters: die vormen de aanvraag (RFC-045).
       open_terms:

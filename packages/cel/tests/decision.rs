@@ -177,9 +177,69 @@ fn the_policy_fills_the_term_and_names_the_heads_finding() {
     let shape = decision::derive(&service, LAW, "1", day()).unwrap();
     assert!(shape.input("grond_aanwezig").is_none());
     assert!(shape.filled("grond_aanwezig"));
-    assert!(shape.finding("grond_aanwezig").is_none());
-    let own = shape.finding("grond_aanwezig_volgens_hoofd").unwrap();
+    let cell = bare("fictieve_school");
+    let by = cell.authority();
+    assert!(shape.finding("grond_aanwezig", by).is_none());
+    let own = shape.finding("grond_aanwezig_volgens_hoofd", by).unwrap();
     assert_eq!(own.declared_by(), "beleid_verlof_fictief#1");
+    // No regulation names who answers it: whoever executes the policy does.
+    assert!(own.answered_by.is_empty());
+}
+
+/// The policy names another authority on its own term (`competent_authority`):
+/// the finding is that authority's, not the cell's.
+fn policy_answered_by(authority: &str) -> String {
+    POLICY.replace(
+        "          decided_per_case_by: het hoofd\n      implements:",
+        &format!(
+            "          decided_per_case_by: het hoofd\n          competent_authority:\n            \
+             name: {authority}\n      implements:"
+        ),
+    )
+}
+
+#[test]
+fn a_finding_another_authority_answers_is_refused() {
+    let policy = policy_answered_by("de leerplichtambtenaar");
+    assert_ne!(policy, POLICY);
+    let mut service = service(&[GENERAL_LAW, SPECIAL_LAW, &policy]);
+    let shape = decision::derive(&service, LAW, "1", day()).unwrap();
+    let cell = bare("fictieve_school");
+    let own = shape
+        .terms
+        .iter()
+        .find(|t| t.id == "grond_aanwezig_volgens_hoofd")
+        .unwrap();
+    assert!(own.asks_finding());
+    assert!(!own.answers(cell.authority()));
+    assert!(shape
+        .finding("grond_aanwezig_volgens_hoofd", cell.authority())
+        .is_none());
+    let e = decide(
+        &mut service,
+        5,
+        json!({"grond_aanwezig_volgens_hoofd": true}),
+    )
+    .unwrap_err();
+    assert!(
+        matches!(&e, Error::Refused(m) if m.contains("answered by 'de leerplichtambtenaar'")),
+        "{e}"
+    );
+}
+
+#[test]
+fn a_finding_the_cell_answers_by_name_is_taken() {
+    // The cell is "Testcel" (common::cell_tempdir): named, it answers.
+    let policy = policy_answered_by("Testcel");
+    let mut service = service(&[GENERAL_LAW, SPECIAL_LAW, &policy]);
+    let (gram, findings) = decide(
+        &mut service,
+        5,
+        json!({"grond_aanwezig_volgens_hoofd": true}),
+    )
+    .unwrap();
+    assert_eq!(gram.outputs["verlof_verleend"], json!(true));
+    assert_eq!(findings, ["grond_aanwezig_volgens_hoofd"]);
 }
 
 #[test]

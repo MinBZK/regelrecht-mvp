@@ -15,8 +15,8 @@ use regelrecht_cel::{
     decision, reading, shape, Cell, Disk, Error, Files, Gram, Reference, Source, EXECUTOGRAM,
 };
 use regelrecht_engine::{
-    ArticleResult, EngineError, FilledBy, LawExecutionService, OpenTermFilled, ParameterType,
-    PathNode, PathNodeType,
+    ArticleResult, Authority, EngineError, FilledBy, LawExecutionService, OpenTermFilled,
+    ParameterType, PathNode, PathNodeType,
 };
 use regelrecht_law_model::stored;
 use serde_json::{json, Map, Value};
@@ -219,14 +219,18 @@ impl Corpus {
     /// school's own holidays in its policy, the cell answers whether leave
     /// falls outside the school holidays and the head is not asked.
     pub fn cell(&self) -> Result<Cellen> {
-        let eigen = self.begonnen(&self.casus.cel, &self.cell_dir, self.casus.begin.as_ref())?;
-        let andere = self
-            .casus
-            .andere_cellen
-            .iter()
-            .zip(&self.andere_dirs)
-            .map(|(a, dir)| self.begonnen(&a.cel, dir, a.begin.as_ref()))
-            .collect::<Result<Vec<_>>>()?;
+        let eigen = self.begonnen(
+            &self.casus.cel,
+            &self.cell_dir,
+            self.casus.begin.as_ref(),
+            &[],
+        )?;
+        let mut andere: Vec<Cell> = Vec::new();
+        for (a, dir) in self.casus.andere_cellen.iter().zip(&self.andere_dirs) {
+            let sfeer: Vec<&Cell> = std::iter::once(&eigen).chain(&andere).collect();
+            let cell = self.begonnen(&a.cel, dir, a.begin.as_ref(), &sfeer)?;
+            andere.push(cell);
+        }
         Ok(Cellen { eigen, andere })
     }
 
@@ -269,20 +273,27 @@ impl Corpus {
         })
     }
 
-    /// The cell `cel` in `dir`, with what `begin` records.
-    fn begonnen(&self, cel: &str, dir: &Path, begin: Option<&crate::casus::Begin>) -> Result<Cell> {
+    /// The cell `cel` in `dir`, with what `begin` records, deciding with
+    /// `sfeer`: the cells begun before it.
+    fn begonnen(
+        &self,
+        cel: &str,
+        dir: &Path,
+        begin: Option<&crate::casus::Begin>,
+        sfeer: &[&Cell],
+    ) -> Result<Cell> {
         let mut cell = Cell::in_memory_from(&*self.files, cel, dir)?;
         let Some(begin) = begin else {
             return Ok(cell);
         };
         let mut service = self.service()?;
         for e in &begin.executogrammen {
-            cell.record_executogram(&service, &e.feit, &e.velden, begin.datum)?;
+            cell.record_executogram(&service, &e.feit, &e.velden, e.datum.unwrap_or(begin.datum))?;
         }
         for a in &begin.aanvragen {
             let ingediend = cell.record_submission(
                 &mut service,
-                &[],
+                sfeer,
                 self.law(),
                 self.article(),
                 None,
@@ -291,7 +302,7 @@ impl Corpus {
             )?;
             cell.decide(
                 &mut service,
-                &[],
+                sfeer,
                 self.law(),
                 self.article(),
                 &ingediend.id,
@@ -453,42 +464,47 @@ fn in_te_vullen(shape: &shape::Shape) -> Vec<Value> {
         .collect()
 }
 
-/// The findings the deciding article of `shape` leaves to the authority
-/// itself: not those of a policy that fills one of its terms.
-fn eigen_oordelen(
-    shape: &decision::DecisionShape,
-) -> impl Iterator<Item = &regelrecht_engine::DecisionTerm> {
+/// The findings the deciding article of `shape` asks of `wie`, the
+/// authority that decides: not those of a policy that fills one of its
+/// terms.
+fn eigen_oordelen<'s>(
+    shape: &'s decision::DecisionShape,
+    wie: &'s Authority,
+) -> impl Iterator<Item = &'s regelrecht_engine::DecisionTerm> {
     shape
         .terms
         .iter()
-        .filter(|t| t.is_finding() && t.law_id == shape.law_id && t.article == shape.article)
+        .filter(|t| t.is_finding(wie) && t.law_id == shape.law_id && t.article == shape.article)
 }
 
-/// Whether the open term `term` of the article `waar` (`<law>#<article>`)
-/// is one a policy leaves to the authority for a case: the article fills a
-/// term of another (`implements`) and leaves this one to an authority per
-/// case (RFC-048 §2).
+/// The open term `term` of the article `waar` (`<law>#<article>`) if it is
+/// one a policy leaves to the authority for a case: the article fills a
+/// term of another (`implements`) and judges this one per case, with
+/// nothing filling it (RFC-048 §2), as the engine says
+/// ([`LawExecutionService::decision_terms`]). The article need not be one
+/// the decision reaches through `implements`: a policy may fill a term of a
+/// regulation the decision reads.
 fn beleid_laat_oordelen(
     service: &LawExecutionService,
     term: &str,
     waar: &str,
     on: NaiveDate,
-) -> bool {
-    waar.split_once('#')
-        .and_then(|(law, article)| {
-            service
-                .resolver()
-                .get_law_for_date(law, Some(on))?
-                .find_article_by_number(article)
-        })
-        .is_some_and(|article| {
-            article.get_implements().is_some_and(|i| !i.is_empty())
-                && article
-                    .get_open_terms()
-                    .into_iter()
-                    .flatten()
-                    .any(|t| t.id == term && t.decided_per_case_by.is_some())
-        })
+) -> Option<regelrecht_engine::DecisionTerm> {
+    let (law, article) = waar.split_once('#')?;
+    let vult = service
+        .resolver()
+        .get_law_for_date(law, Some(on))?
+        .find_article_by_number(article)?
+        .get_implements()
+        .is_some_and(|i| !i.is_empty());
+    if !vult {
+        return None;
+    }
+    service
+        .decision_terms(law, article, &on.to_string(), &Default::default())
+        .ok()?
+        .into_iter()
+        .find(|t| t.id == term && t.declared_by() == waar && t.asks_finding())
 }
 
 /// What the law asks on `on`: the fields of the application, the deciding
@@ -513,7 +529,8 @@ pub fn vormen(corpus: &Corpus, cell: &Cellen, on: NaiveDate) -> Result<Value> {
     // The form asks the findings of the deciding article itself. One that a
     // policy leaves to the authority where its cell is silent, it asks only
     // when the preview shows the case reaches it ([`voorvertonen`]).
-    let bevindingen: Vec<Value> = eigen_oordelen(&besluit)
+    let wie = cell.eigen.authority();
+    let bevindingen: Vec<Value> = eigen_oordelen(&besluit, wie)
         .map(|t| veld(&decision::finding_field(t)))
         .collect();
     let mut herkomst: Vec<Value> = besluit
@@ -539,7 +556,7 @@ pub fn vormen(corpus: &Corpus, cell: &Cellen, on: NaiveDate) -> Result<Value> {
             "kroniek van de cel"
         } else if !t.filled_by.is_empty() {
             "beleid"
-        } else if t.is_finding() {
+        } else if t.is_finding(wie) {
             "bestuursorgaan"
         } else {
             continue;
@@ -576,7 +593,9 @@ pub fn vormen(corpus: &Corpus, cell: &Cellen, on: NaiveDate) -> Result<Value> {
     if let Some(b) = &corpus.afleiding.beroep {
         let beroep = shape::derive(&service, &b.law, &b.article, on)?;
         let uitspraak = decision::derive(&service, &b.law, &b.article, on)?;
-        let mut bevindingen = oordelen_van_de_rechter(&service, &uitspraak, on)?;
+        let (rechter, _) = cell.op(&b.rechter)?;
+        let mut bevindingen =
+            oordelen_van_de_rechter(&service, &uitspraak, rechter.authority(), on)?;
         for field in opnieuw_te_beoordelen(corpus, &service, on)? {
             if !bevindingen.iter().any(|v| v["naam"] == field.name) {
                 bevindingen.push(veld(&field));
@@ -601,9 +620,11 @@ pub fn vormen(corpus: &Corpus, cell: &Cellen, on: NaiveDate) -> Result<Value> {
 /// What the court judges when it decides the case itself (Awb 8:72 lid 3
 /// onder b): it calls the contested decision on objection anew, and that
 /// calls the case's decision anew. Their findings are then the court's,
-/// also those a policy leaves to the authority where its cell is silent:
-/// the court has no such chronicle, so there the policy's cell is silent,
-/// and the court supplements the facts itself (8:69 lid 3).
+/// since its judgment takes the place of the decision, also those a policy
+/// leaves to the authority where its cell is silent: the court has no such
+/// chronicle, so there the policy's cell is silent, and the court
+/// supplements the facts itself (8:69 lid 3). So every term that takes a
+/// finding counts, whoever answers it in the decision itself.
 fn opnieuw_te_beoordelen(
     corpus: &Corpus,
     service: &LawExecutionService,
@@ -614,7 +635,7 @@ fn opnieuw_te_beoordelen(
         decision::derive(service, corpus.awb(), corpus.objection(), on)?,
         decision::derive(service, corpus.law(), corpus.article(), on)?,
     ] {
-        for t in shape.terms.iter().filter(|t| t.is_finding()) {
+        for t in shape.terms.iter().filter(|t| t.asks_finding()) {
             if !uit.iter().any(|f| f.name == t.id) {
                 uit.push(decision::finding_field(t));
             }
@@ -623,18 +644,19 @@ fn opnieuw_te_beoordelen(
     Ok(uit)
 }
 
-/// What the court judges per case for the decision `shape`: the judgements
-/// of the deciding article, and those of each article it reads an output
-/// of (`source.regulation`), declared there with `decided_per_case_by` and
-/// filled by no regulation. Those the deciding article asks only when it
-/// reads that article: 8:70 reads 8:72 for a well-founded appeal. Each has
-/// its article as `grondslag`.
+/// What the court, `wie`, judges per case for the decision `shape`: the
+/// findings of the deciding article, and those of each article it reads an
+/// output of (`source.regulation`) that take a finding of the court, as the
+/// engine says ([`LawExecutionService::decision_terms`]). Those the deciding
+/// article asks only when it reads that article: 8:70 reads 8:72 for a
+/// well-founded appeal. Each has its article as `grondslag`.
 fn oordelen_van_de_rechter(
     service: &LawExecutionService,
     shape: &decision::DecisionShape,
+    wie: &Authority,
     on: NaiveDate,
 ) -> Result<Vec<Value>> {
-    let mut uit: Vec<Value> = eigen_oordelen(shape)
+    let mut uit: Vec<Value> = eigen_oordelen(shape, wie)
         .map(|t| veld(&decision::finding_field(t)))
         .collect();
     let resolver = service.resolver();
@@ -644,7 +666,7 @@ fn oordelen_van_de_rechter(
     else {
         return Ok(uit);
     };
-    let mut gelezen: Vec<(String, &regelrecht_law_model::Article)> = Vec::new();
+    let mut gelezen: Vec<(String, String)> = Vec::new();
     for source in deciding
         .get_inputs()
         .iter()
@@ -654,35 +676,20 @@ fn oordelen_van_de_rechter(
             continue;
         };
         if let Some(a) = resolver.get_article_by_output(law_id, output, Some(on)) {
-            if !gelezen
-                .iter()
-                .any(|(l, b)| l == law_id && b.number == a.number)
-            {
-                gelezen.push((law_id.clone(), a));
+            let waar = (law_id.clone(), a.number.clone());
+            if !gelezen.contains(&waar) {
+                gelezen.push(waar);
             }
         }
     }
-    for (law_id, a) in gelezen {
-        for term in a.get_open_terms().into_iter().flatten() {
-            let gevuld = !resolver
-                .find_implementations(
-                    law_id.as_str(),
-                    &a.number,
-                    term,
-                    Some(on),
-                    &Default::default(),
-                )?
-                .implementations
-                .is_empty();
-            if term.decided_per_case_by.is_none() || gevuld {
-                continue;
-            }
-            uit.push(json!({
-                "naam": term.id,
-                "type": term.term_type,
-                "mag_leeg": !term.required,
-                "grondslag": format!("{law_id}#{}", a.number),
-            }));
+    let dag = on.to_string();
+    for (law_id, article) in gelezen {
+        for t in service
+            .decision_terms(&law_id, &article, &dag, &Default::default())?
+            .iter()
+            .filter(|t| t.law_id == law_id && t.article == article && t.is_finding(wie))
+        {
+            uit.push(veld(&decision::finding_field(t)));
         }
     }
     Ok(uit)
@@ -1597,7 +1604,7 @@ fn opnieuw_te_vinden(corpus: &Corpus, cell: &Cellen, bestreden: &Gram) -> Result
     let shape = decision::derive(&service, law_id, article, bestreden.recorded_on)?;
     let mut bevindingen = Vec::new();
     for naam in cell.findings(&mut service, &cell.sfeer(), &bestreden.id)? {
-        let Some(term) = shape.finding(&naam) else {
+        let Some(term) = shape.finding(&naam, cell.authority()) else {
             continue;
         };
         let mut v = veld(&decision::finding_field(term));
@@ -1698,10 +1705,11 @@ fn voorvertonen<T>(
     let eigen_shape = decision::derive(&service, corpus.law(), corpus.article(), on)?;
     // A term the policy fills takes no finding; one a policy leaves to the
     // authority is given once the case reaches it.
+    let wie = cell.eigen.authority();
     let van_beleid = |naam: &str| {
         eigen_shape.filled(naam)
             || eigen_shape.terms.iter().any(|t| {
-                t.id == naam && t.is_finding() && t.declared_by() != eigen_shape.grondslag()
+                t.id == naam && t.is_finding(wie) && t.declared_by() != eigen_shape.grondslag()
             })
     };
     let mut gegeven: Map<String, Value> = Map::new();
@@ -1721,7 +1729,7 @@ fn voorvertonen<T>(
         let Some((term, waar)) = zonder_oordeel(&e) else {
             break Err(e);
         };
-        let beleid = beleid_laat_oordelen(&service, &term, &waar, on);
+        let beleid = beleid_laat_oordelen(&service, &term, &waar, on).is_some();
         let zwijgt = beleid;
         // A judgement of the authority that shares its name with a term
         // of the cell elsewhere: give it back, as the real decision would.
@@ -1762,24 +1770,16 @@ fn voorvertonen<T>(
     })
 }
 
-/// The field for the silent term `term`, open on `waar` (`<law>#<article>`):
-/// as that article's decision asks it, and otherwise with only its name and
-/// where it is open, so the form still asks it.
+/// The field for the silent term `term`, open on `waar` (`<law>#<article>`),
+/// as a decision takes the finding on it ([`decision::finding_field`]), and
+/// otherwise with only its name and where it is open, so the form still
+/// asks it.
 fn stil_veld(service: &LawExecutionService, term: &str, waar: &str, on: NaiveDate) -> Value {
-    waar.split_once('#')
-        .and_then(|(law, article)| decision::derive(service, law, article, on).ok())
-        .and_then(|shape| shape.input(term).map(|i| veld(&i.field)))
-        .unwrap_or_else(|| {
-            // An article that takes no decision of its own: the type as its
-            // open term declares it.
-            let type_ = waar.split_once('#').and_then(|(law, article)| {
-                let law = service.get_law_version(law, None).ok()?;
-                let article = law.articles.iter().find(|a| a.number == article)?;
-                let open = article.get_open_terms()?.iter().find(|o| o.id == term)?;
-                serde_json::to_value(open.term_type).ok()
-            });
-            json!({ "naam": term, "type": type_, "mag_leeg": false, "grondslag": waar })
-        })
+    beleid_laat_oordelen(service, term, waar, on)
+        .map(|t| veld(&decision::finding_field(&t)))
+        .unwrap_or_else(
+            || json!({ "naam": term, "type": null, "mag_leeg": false, "grondslag": waar }),
+        )
 }
 
 /// The refusal as the preview shows it. A judgement missing on a term a

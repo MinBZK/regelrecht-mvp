@@ -15,14 +15,18 @@
 //!
 //! An open term is no input. A policy that fills it (`implements`) is the
 //! engine's to run, and its value is the term's (RFC-048 §2). A term that
-//! nothing fills and that the law or policy leaves to the authority per
-//! case (`decided_per_case_by`) is a finding of the authority, which the
-//! cell keeps among the fields. Which terms those are, the engine says
+//! nothing fills and that the law or policy marks as judged per case
+//! (`decided_per_case_by`) is a finding, which the cell keeps among the
+//! fields. It is the finding of the authority that answers the term: the
+//! one its `competent_authority` names, else the one that executes the
+//! article. Which terms those are, and who answers each, the engine says
 //! ([`LawExecutionService::decision_terms`]). What a process asks of whom,
 //! and when, is not the cell's.
 
 use chrono::NaiveDate;
-use regelrecht_engine::{DecisionTerm, LawExecutionService, ParameterType, ProcedureStage};
+use regelrecht_engine::{
+    Authority, DecisionTerm, LawExecutionService, ParameterType, ProcedureStage,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -96,11 +100,14 @@ impl DecisionShape {
         self.inputs.iter().find(|i| i.field.name == name)
     }
 
-    /// The finding `name` the decision may take: an open term that nothing
-    /// fills and that the deciding article, or a policy that fills one of
-    /// its terms, leaves to an authority per case.
-    pub fn finding(&self, name: &str) -> Option<&DecisionTerm> {
-        self.terms.iter().find(|t| t.id == name && t.is_finding())
+    /// The finding `name` the decision may take from `authority`: an open
+    /// term that nothing fills, of the deciding article or of a policy that
+    /// fills one of its terms, judged per case and answered by `authority`
+    /// ([`DecisionTerm::is_finding`]).
+    pub fn finding(&self, name: &str, authority: &Authority) -> Option<&DecisionTerm> {
+        self.terms
+            .iter()
+            .find(|t| t.id == name && t.is_finding(authority))
     }
 
     /// Whether a regulation fills the open term `name` of the deciding
@@ -248,7 +255,10 @@ pub fn derive(
             sources.insert(req.name.clone(), Source::Cell);
         }
     }
-    let terms = service.decision_terms(law_id, article, &date)?;
+    // For no instance in particular: the cell does not pass its identity to
+    // the law, so a policy scoped by `gemeente_code` is not found (an open
+    // point of RFC-048).
+    let terms = service.decision_terms(law_id, article, &date, &HashMap::new())?;
     let inputs = fields
         .into_iter()
         .map(|field| {

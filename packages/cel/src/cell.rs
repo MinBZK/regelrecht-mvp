@@ -757,8 +757,11 @@ impl Cell {
     /// the decision that leaves the term to the authority: the deciding
     /// article, and an article it calls, such as a decision called anew. The
     /// cell checks a finding on a term of the deciding article as one of its
-    /// inputs; the engine refuses one that no article in the decision asks,
-    /// or of the wrong type. A finding for a call anew is so given only once
+    /// inputs, and refuses one on such a term that another authority
+    /// answers: the one the term names (`competent_authority`), or the one
+    /// that executes its article ([`regelrecht_engine::DecisionTerm`]). The
+    /// engine refuses one that no article in the decision asks, or of the
+    /// wrong type. A finding for a call anew is so given only once
     /// that call happens: given while the decision does not call anew (the
     /// objection is not admissible, say), no article asks it and the
     /// decision is refused. The chronolexogram keeps each finding among its
@@ -888,7 +891,10 @@ impl Cell {
         let reader = self.reader(grams, None);
         let others = known_on(sphere, on);
         let answerers = Answerers::new(&reader, &others);
-        if let Some(name) = supplied.keys().find(|name| is_finding(&shape, name)) {
+        if let Some(name) = supplied
+            .keys()
+            .find(|name| is_finding(&shape, name, &self.authority))
+        {
             return Err(refused(format!(
                 "'{name}' of the decision of {} is a finding of the deciding authority; it \
                  is given among the findings",
@@ -915,7 +921,8 @@ impl Cell {
                     shape.grondslag()
                 )));
             }
-            if let Some(term) = shape.finding(name) {
+            refuse_finding_of_another(&shape, name, &self.authority)?;
+            if let Some(term) = shape.finding(name, &self.authority) {
                 let field = finding_field(term);
                 if !shape::fits(&field, value) {
                     return Err(refused(format!(
@@ -931,7 +938,7 @@ impl Cell {
         // authority supplies. One a policy leaves to the authority for a
         // case the engine asks only when the case reaches it.
         if let Some(term) = shape.terms.iter().find(|t| {
-            t.is_finding()
+            t.is_finding(&self.authority)
                 && t.law_id == shape.law_id
                 && t.article == shape.article
                 && t.required
@@ -1080,7 +1087,7 @@ impl Cell {
                 // without the finding, is none: the case did not reach it.
                 let Some(term) = shape.terms.iter().find(|t| {
                     t.id == **name
-                        && t.is_finding()
+                        && t.is_finding(&self.authority)
                         && !(t.law_id == shape.law_id && t.article == shape.article)
                 }) else {
                     return true;
@@ -1401,7 +1408,7 @@ impl Cell {
         for (name, value) in &gram.fields {
             if shape.input(name).is_some() {
                 fields.insert(name.clone(), value.clone());
-            } else if used.contains(name) && shape.finding(name).is_some() {
+            } else if used.contains(name) && shape.finding(name, &self.authority).is_some() {
                 findings.insert(name.clone(), value.clone());
             }
         }
@@ -1990,11 +1997,46 @@ fn collect_outputs(
     Ok(())
 }
 
-/// Whether `name` is a finding of the deciding authority on the decision of
-/// `shape`: an open term of the decision that nothing fills and that is
-/// left to an authority per case (`decided_per_case_by`).
-fn is_finding(shape: &DecisionShape, name: &str) -> bool {
-    shape.finding(name).is_some()
+/// Whether `name` is a finding of `authority` on the decision of `shape`:
+/// an open term of the decision that nothing fills, judged per case
+/// (`decided_per_case_by`) and answered by `authority`.
+fn is_finding(shape: &DecisionShape, name: &str, authority: &Authority) -> bool {
+    shape.finding(name, authority).is_some()
+}
+
+/// Refuse a finding on the open term `name` of the decision of `shape` that
+/// another authority answers: the one the term names in its
+/// `competent_authority`, or the one that executes its article. The cell
+/// of `authority` gives only its own findings.
+fn refuse_finding_of_another(
+    shape: &DecisionShape,
+    name: &str,
+    authority: &Authority,
+) -> Result<()> {
+    let Some(term) = shape
+        .terms
+        .iter()
+        .find(|t| t.id == name && t.asks_finding() && !t.answers(authority))
+    else {
+        return Ok(());
+    };
+    let names: Vec<String> = term
+        .answered_by
+        .iter()
+        .map(|n| format!("'{}'", n.name))
+        .collect();
+    Err(refused(format!(
+        "'{name}' of {} is answered by {}, and the cell is '{}'{}; a cell gives only its own \
+         findings",
+        term.declared_by(),
+        names.join(" or "),
+        authority.name,
+        authority
+            .category
+            .as_deref()
+            .map(|c| format!(" ({c})"))
+            .unwrap_or_default()
+    )))
 }
 
 /// Refuse what is no decision: a chronolexogram on a submission whose

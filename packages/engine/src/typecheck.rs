@@ -529,7 +529,7 @@ impl<'l, 'f> ArticleChecker<'l, 'f> {
             else {
                 continue;
             };
-            if term.required && !term_has_default(term) {
+            if term.required && !term.has_default() {
                 self.location = format!("output '{}'", output.name);
                 self.report(
                     Rule::N5,
@@ -1631,15 +1631,6 @@ fn is_literal_shaped(expr: &ActionValue) -> bool {
     matches!(expr, ActionValue::Literal(value) if Ty::of_literal(value).is_some())
 }
 
-/// Whether an open term carries a default the engine can run. `default: {}`
-/// or `default: {actions: []}` resolves to `null` ("using empty default"),
-/// and counts as no default here.
-fn term_has_default(term: &crate::article::OpenTerm) -> bool {
-    term.default
-        .as_ref()
-        .is_some_and(|d| d.actions.as_ref().is_some_and(|a| !a.is_empty()))
-}
-
 /// The reference an `EQUALS`/`NOT_EQUALS` tests against a literal `null`.
 fn null_tested<'v>(subject: &'v ActionValue, value: &'v ActionValue) -> Option<&'v str> {
     if is_null_literal(value) {
@@ -1702,7 +1693,7 @@ fn environment(article: &Article) -> BTreeMap<String, Symbol> {
             declare(
                 &term.id,
                 Some(Ty::of(term.term_type)),
-                !term.required && !term_has_default(term),
+                !term.required && !term.has_default(),
             );
         }
     }

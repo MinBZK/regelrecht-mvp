@@ -5,8 +5,8 @@ Feature: Het college oordeelt zoals het geneeskundig advies
   aanvrager geldt (artikel 5). Het college oordeelt zoals dat advies; zonder
   advies oordeelt het zelf (artikel 6). In een cel geeft de GGD het advies
   als antwoord uit haar kroniek (artikel 7); hier, zonder cel, geeft het
-  scenario wat de GGD in het advies opgeeft als bevinding (artikel 7, eigen
-  open begrip).
+  scenario als bevinding wat het college in het advies leest (artikel 7,
+  eigen open begrip).
 
   Background:
     Given the calculation date is "2026-10-20"
@@ -17,10 +17,10 @@ Feature: Het college oordeelt zoals het geneeskundig advies
 
   Scenario: Het advies vindt een langdurige loopbeperking
     Given the following findings:
-      | advies_langdurige_loopbeperking_volgens_ggd                        | true  |
-      | advies_continu_afhankelijk_van_hulp_bestuurder_volgens_ggd         | false |
-      | advies_permanent_rolstoelgebonden_volgens_ggd                      | false |
-      | advies_ernstige_beperkingen_andere_dan_loopbeperkingen_volgens_ggd | false |
+      | advies_langdurige_loopbeperking_volgens_college                        | true  |
+      | advies_continu_afhankelijk_van_hulp_bestuurder_volgens_college         | false |
+      | advies_permanent_rolstoelgebonden_volgens_college                      | false |
+      | advies_ernstige_beperkingen_andere_dan_loopbeperkingen_volgens_college | false |
     When I evaluate "langdurige_loopbeperking" of "fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal"
     Then the execution succeeds
     Then output "langdurige_loopbeperking" is true
@@ -30,10 +30,10 @@ Feature: Het college oordeelt zoals het geneeskundig advies
 
   Scenario: Het advies vindt geen enkel criterium
     Given the following findings:
-      | advies_langdurige_loopbeperking_volgens_ggd                        | false |
-      | advies_continu_afhankelijk_van_hulp_bestuurder_volgens_ggd         | false |
-      | advies_permanent_rolstoelgebonden_volgens_ggd                      | false |
-      | advies_ernstige_beperkingen_andere_dan_loopbeperkingen_volgens_ggd | false |
+      | advies_langdurige_loopbeperking_volgens_college                        | false |
+      | advies_continu_afhankelijk_van_hulp_bestuurder_volgens_college         | false |
+      | advies_permanent_rolstoelgebonden_volgens_college                      | false |
+      | advies_ernstige_beperkingen_andere_dan_loopbeperkingen_volgens_college | false |
     When I evaluate "langdurige_loopbeperking" of "fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal"
     Then the execution succeeds
     Then output "langdurige_loopbeperking" is false
@@ -44,10 +44,10 @@ Feature: Het college oordeelt zoals het geneeskundig advies
   Scenario: Hulp van de bestuurder alleen is geen medische grond
     # Onder b: een passagier heeft ook een langdurige loopbeperking nodig.
     Given the following findings:
-      | advies_langdurige_loopbeperking_volgens_ggd                        | false |
-      | advies_continu_afhankelijk_van_hulp_bestuurder_volgens_ggd         | true  |
-      | advies_permanent_rolstoelgebonden_volgens_ggd                      | false |
-      | advies_ernstige_beperkingen_andere_dan_loopbeperkingen_volgens_ggd | false |
+      | advies_langdurige_loopbeperking_volgens_college                        | false |
+      | advies_continu_afhankelijk_van_hulp_bestuurder_volgens_college         | true  |
+      | advies_permanent_rolstoelgebonden_volgens_college                      | false |
+      | advies_ernstige_beperkingen_andere_dan_loopbeperkingen_volgens_college | false |
     When I evaluate "continu_afhankelijk_van_hulp_bestuurder" of "fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal"
     Then the execution succeeds
     Then output "continu_afhankelijk_van_hulp_bestuurder" is true
@@ -57,10 +57,10 @@ Feature: Het college oordeelt zoals het geneeskundig advies
 
   Scenario: Een rolstoelgebonden aanvrager heeft een medische grond
     Given the following findings:
-      | advies_langdurige_loopbeperking_volgens_ggd                        | false |
-      | advies_continu_afhankelijk_van_hulp_bestuurder_volgens_ggd         | false |
-      | advies_permanent_rolstoelgebonden_volgens_ggd                      | true  |
-      | advies_ernstige_beperkingen_andere_dan_loopbeperkingen_volgens_ggd | false |
+      | advies_langdurige_loopbeperking_volgens_college                        | false |
+      | advies_continu_afhankelijk_van_hulp_bestuurder_volgens_college         | false |
+      | advies_permanent_rolstoelgebonden_volgens_college                      | true  |
+      | advies_ernstige_beperkingen_andere_dan_loopbeperkingen_volgens_college | false |
     When I evaluate "medische_grond_voor_kaart" of "fictief_beleid_gehandicaptenparkeerkaart_gemeente_wilgendaal"
     Then the execution succeeds
     Then output "medische_grond_voor_kaart" is true

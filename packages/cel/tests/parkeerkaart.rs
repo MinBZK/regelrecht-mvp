@@ -342,9 +342,11 @@ fn the_decision_takes_the_application_and_the_cell_and_the_policy_says_what_the_
     );
     // The four criteria and the college's power: the municipality's policy
     // fills them, so no finding takes their place (RFC-048 §2).
+    let college = cell();
+    let by = college.authority();
     for name in [WALKING, HELP, WHEELCHAIR, OTHER, POWER] {
         assert!(shape.filled(name), "{name}");
-        assert!(shape.finding(name).is_none(), "{name}");
+        assert!(shape.finding(name, by).is_none(), "{name}");
     }
     // The findings: art. 2 lid 2 of the Regeling (whether to leave the
     // examination out, and the judgements under a and b), and where the
@@ -354,7 +356,7 @@ fn the_decision_takes_the_application_and_the_cell_and_the_policy_says_what_the_
     let mut findings: Vec<&str> = shape
         .terms
         .iter()
-        .filter(|t| t.is_finding())
+        .filter(|t| t.is_finding(by))
         .map(|t| t.id.as_str())
         .collect();
     findings.sort_unstable();
@@ -370,10 +372,14 @@ fn the_decision_takes_the_application_and_the_cell_and_the_policy_says_what_the_
     ];
     expected.sort_unstable();
     assert_eq!(findings, expected);
+    // Each is the college's: the GGD answers none of them (RFC-002), so a
+    // finding of hers on them would be refused.
+    let ggd = ggd();
+    assert!(shape.terms.iter().all(|t| !t.is_finding(ggd.authority())));
     // The college may leave the three of lid 2 out: then it does not leave
     // the examination out.
     for name in [LEFT_OUT, KNOWN, JUDGED] {
-        let term = shape.finding(name).unwrap();
+        let term = shape.finding(name, by).unwrap();
         assert!(
             regelrecht_cel::decision::finding_field(term).nullable,
             "{name}"
@@ -1204,15 +1210,30 @@ fn issuer(actor: &str) -> Cell {
     Cell::in_memory(actor, dir).unwrap()
 }
 
-/// `issuer` issues `bsn` a card on `on`, after an examination by the GGD.
-/// The policy of Wilgendaal is unscoped (it says so), so the other body
-/// gives its own finding on a valid card.
+/// `issuer` issues `bsn` a card on `on`, after an examination and an advice
+/// of the GGD. The policy of Wilgendaal is unscoped (it says so), so the
+/// other body decides under it. It gives no finding on that policy's own
+/// terms: the college of Wilgendaal, its holder, answers those. So the
+/// cells answer them all: the GGD the examination and the advice, the
+/// cell of Wilgendaal, without a card yet, whether the applicant holds one.
 fn issued_by(issuer: &mut Cell, bsn: &str, on: &str) -> Gram {
     let app = applied(issuer, bsn, on);
     reported(issuer, bsn, on, on);
-    let mut findings = examined(true);
-    findings.insert(VALID_C.into(), json!(false));
-    let gram = decide_with(issuer, &app.id, &findings, on).unwrap();
+    advised(bsn, on, true, on);
+    let wilgendaal = cell();
+    let gram = issuer
+        .decide(
+            &mut service(),
+            &[&ggd(), &wilgendaal],
+            LAW,
+            ARTICLE,
+            &app.id,
+            &Map::new(),
+            &Map::new(),
+            day(on),
+        )
+        .map(|mut grams| grams.remove(0))
+        .unwrap();
     assert_eq!(
         gram.outputs["gehandicaptenparkeerkaart_verstrekt"],
         json!(true)
@@ -1413,9 +1434,10 @@ fn filled_by(cell: &Cell, id: &str, term: &str) -> regelrecht_engine::FilledBy {
 
 #[test]
 fn an_advice_with_a_long_term_walking_limitation_grants_the_card() {
-    // The college finds no limitation, but the advice does. The policy
-    // fills the four judgements from the advice and wins over the college
-    // (RFC-045): it cannot deviate (Awb 4:84 is open).
+    // The college would find no limitation, but the advice does. The policy
+    // fills the four judgements from the advice, and reads the college's own
+    // judgement only without one (RFC-048 §2): the college cannot deviate
+    // (Awb 4:84 is open).
     let mut cell = cell();
     let app = applied(&mut cell, APPLICANT, "2026-10-13");
     reported(&mut cell, APPLICANT, "2026-10-16", "2026-10-19");
@@ -1435,9 +1457,11 @@ fn an_advice_with_a_long_term_walking_limitation_grants_the_card() {
             article: "6".into()
         }
     );
-    // The college's finding was set aside, so the decision used none.
+    // The policy did not read the college's own judgement, so the decision
+    // holds no finding on the walking limitation.
     let found = cell.findings(&mut service(), &[&ggd()], &gram.id).unwrap();
     assert!(!found.contains(&WALKING.to_string()), "{found:?}");
+    assert!(!found.contains(&WALKING_C.to_string()), "{found:?}");
     // Asked why: in the trace, art. 7 asks the GGD's cell for the answer,
     // which its reduction gave from its advice.
     let result = cell.explain(&mut service(), &[&ggd()], &gram.id).unwrap();
