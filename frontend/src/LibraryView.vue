@@ -22,8 +22,14 @@ import InviteMembersSheet from './components/InviteMembersSheet.vue';
 import TasksCategoriesPane from './components/TasksCategoriesPane.vue';
 import TasksListPane from './components/TasksListPane.vue';
 import TasksSidebarItem from './components/TasksSidebarItem.vue';
+import LawOverviewPane from './components/LawOverviewPane.vue';
 import UploadConfirmDialog from './components/UploadConfirmDialog.vue';
-import { useAuth } from './composables/useAuth';
+import { useAuth, ensureAuthReady } from './composables/useAuth';
+import {
+  readLocalFavorites,
+  toggleLocalFavorite,
+  moveLocalFavoritesToAccount,
+} from './composables/useLocalFavorites';
 import { useCorpusLaws } from './composables/useCorpusLaws';
 // useEnrichState (bovenop useTaskActions), niet useTasks: LibraryView heeft
 // alleen gerichte refreshes nodig - na een geannuleerde job, na een eigen
@@ -92,7 +98,7 @@ type PendingLeave =
   | { type: 'inview'; run: () => void }
   | { type: 'route'; resolve: (proceed: boolean) => void };
 
-const { authenticated, login } = useAuth();
+const { authenticated, loading: authLoading } = useAuth();
 
 // Provided by AppShell: shows the login-warning popover anchored to an element,
 // so "Bewerken" gates on login the same way the Editor tab does.
@@ -107,11 +113,6 @@ const onLoginTriggerPointerdown = inject('onLoginTriggerPointerdown', () => {});
 // actions that don't originate from a click on the button itself.
 const editButton = ref<NLDDButton | null>(null);
 
-// Label of the back-button that returns to the Home sidebar from underlying
-// pages. Kept fixed as "Home" even though the sidebar's own heading is now
-// traject-aware (see sidebarTitle) - a back-button reads more naturally as
-// "Home" than as the traject name.
-const LIBRARY_HOME_BACK_TEXT = 'Home';
 
 const route = useRoute();
 const router = useRouter();
@@ -120,6 +121,11 @@ const router = useRouter();
 // `route.params.trajectRef`, so the new `library-traject` route makes the
 // bibliotheek traject-aware without any extra plumbing.
 const { activeTrajectRef, activeTraject } = useTrajects();
+
+// Label of the back-button that returns to the primary sidebar from underlying
+// pages: the name of the tab you are in. A back-button reads more naturally
+// as the tab than as the traject's own name (which the heading shows).
+const LIBRARY_HOME_BACK_TEXT = computed(() => (activeTrajectRef.value ? 'Traject' : 'Corpus juris'));
 
 // Primary-sidebar heading: the active traject's name, or 'Corpus juris' for the
 // public/global corpus (logged-out, or logged-in without a chosen traject).
@@ -134,15 +140,6 @@ const sidebarTitle = computed(() =>
 const sidebarLoadingText = computed(() =>
   activeTrajectRef.value ? 'Traject laden' : 'Corpus juris laden',
 );
-
-// "Account aanvragen" affordance for the favoriet login popover (mirrors the
-// editor/bewerken login popover in AppShell): to the public account-request
-// page. /account-aanvragen is a top-level route, so navigating there unmounts
-// the popover along with the shell.
-const accountRequestHref = computed(() => router.resolve({ name: 'account-aanvragen' }).href);
-function goToAccountRequest() {
-  router.push({ name: 'account-aanvragen' });
-}
 
 // --- Werkdocumenten (folded into Home) ----------------------------------
 // The active traject's werkdocumenten live inside Home: a "Werkdocumenten"
@@ -560,8 +557,19 @@ const instellingenTab = computed(
 // empty-library and, crucially, the index-error takeover) can't drift apart:
 // a failed corpus index must only take over the library itself, never /taken,
 // /instellingen or /werkdocumenten, which don't read the wettenindex at all.
+// "Alle regelwerken" in Corpus juris: the overview in the secondary sidebar
+// (LawOverviewPane). It loads its own page of laws, so like the traject modes
+// it is not "library mode" and an index error does not take it over.
+const isOverviewMode = computed(() => route.name === 'corpus-overview');
+function goToOverview(): void {
+  router.push({ name: 'corpus-overview' });
+}
+function openLawFromOverview(lawId: string): void {
+  router.push({ name: 'corpus-juris', params: { lawId } });
+}
+
 const isLibraryMode = computed(
-  () => !isWerkdocMode.value && !isInstellingenMode.value && !isTakenMode.value,
+  () => !isWerkdocMode.value && !isInstellingenMode.value && !isTakenMode.value && !isOverviewMode.value,
 );
 function goToInstellingen(tab?: string) {
   if (!activeTrajectRef.value) return;
@@ -1080,6 +1088,45 @@ function onDetailTabChange(e: CustomEvent<{ item?: NLDDTabBarItem } | null>) {
   if (view) detailView.value = view;
 }
 
+// --- Machine views in Corpus juris ------------------------------------------
+// Corpus juris shows a law's machine and YAML views only when its current
+// version is enriched, with a label that says it is an example and not
+// established; a text-only law shows its text, and says so when another
+// version does have a machine version. The list entry carries both facts
+// (`enriched`, `enriched_version`), so fetch it for the open law. A traject is
+// a place of work: there every law keeps all three views, as before.
+const lawEntry = shallowRef<CorpusLaw | null>(null);
+const claimLawEntry = useLatest();
+watch(
+  [selectedLawId, activeTrajectRef],
+  async ([lawId, trajectRef]) => {
+    const isCurrent = claimLawEntry();
+    lawEntry.value = null;
+    if (!lawId || trajectRef) return;
+    try {
+      const list = await apiFetchJson<CorpusLaw[]>(
+        lawsListUrl(null, `ids=${encodeURIComponent(lawId)}`),
+      );
+      if (isCurrent()) lawEntry.value = list.find((l) => l.law_id === lawId) ?? null;
+    } catch {
+      // Unknown, so treat it as text only: the safe side for a public page.
+    }
+  },
+  { immediate: true },
+);
+const showMachineViews = computed(() => !!activeTrajectRef.value || !!lawEntry.value?.enriched);
+// The view to render: a deep link to #machine on a text-only law shows the text.
+const shownDetailView = computed(() => (showMachineViews.value ? detailView.value : 'tekst'));
+const exampleSupportingText = computed(() => {
+  const source = lawEntry.value?.source_name;
+  return `De machineversie${source ? ` komt uit ${source} en` : ''} laat zien hoe dit regelwerk uitgevoerd kan worden. Ze is niet vastgesteld: de wettekst blijft leidend.`;
+});
+const otherEnrichedVersion = computed(() =>
+  !activeTrajectRef.value && lawEntry.value && !lawEntry.value.enriched
+    ? formatLawDate(lawEntry.value.enriched_version ?? null)
+    : null,
+);
+
 const activeAction = ref<ExecutionAction | null>(null);
 
 // Curated sidebar sections (in render order). Each entry is
@@ -1476,14 +1523,28 @@ function articleDescription(article: LawArticle): string {
 // controle overschrijft een traag antwoord van het vórige traject dat van het
 // huidige.
 async function loadFavorites(trajectRef: string | null | undefined, isCurrent: () => boolean) {
+  // Settle the login state first: before /auth/status answers, `authenticated`
+  // reads false, and a logged-in user would briefly see the browser's set.
+  if (authLoading.value) {
+    await ensureAuthReady();
+    if (!isCurrent()) return;
+  }
+  // Not logged in: Corpus juris favorites live in this browser.
+  if (!authenticated.value) {
+    favorites.value = trajectRef ? new Set() : readLocalFavorites();
+    return;
+  }
   try {
+    // Logged in: whatever was starred before logging in moves to the account
+    // first, so the list below already contains it.
+    if (!trajectRef) await moveLocalFavoritesToAccount();
     const favIds = await apiFetchJson<string[]>(favoritesUrl(trajectRef), {
       errorMessage: (status) => `Failed to load favorites: ${status}`,
     });
     if (!isCurrent()) return;
     favorites.value = new Set(favIds);
   } catch (e) {
-    // Not authenticated (401/403) or endpoint unavailable - no favorites.
+    // Endpoint unavailable (403, or 503 without a database) - no favorites.
     // Only server errors are worth a console trace.
     if (e instanceof ApiError && e.status >= 500) console.warn(e.message);
   }
@@ -1530,16 +1591,19 @@ async function fetchChangedLawIds(trajectRef: string | null | undefined): Promis
 //     the menu: the same stance as `fetchChangedLawIds`.
 const togglingFavorites = ref(new Set<string>());
 
-// Star button when not logged in: the login nudge sits in the button's popup
-// slot, so the component anchors and toggles it. Logged in there is no popover
-// and the click marks the law.
 function onFavoriteClick() {
-  if (!authenticated.value) return;
   toggleFavorite(selectedLawId.value);
 }
 
 async function toggleFavorite(lawId: string | null) {
-  if (!authenticated.value || !lawId) return;
+  if (!lawId) return;
+  // Not logged in: star in this browser (see useLocalFavorites), then refresh
+  // the sidebar so the law appears under Favorieten.
+  if (!authenticated.value) {
+    favorites.value = toggleLocalFavorite(lawId);
+    loadIndex();
+    return;
+  }
   if (togglingFavorites.value.has(lawId)) return;
 
   togglingFavorites.value.add(lawId);
@@ -2201,10 +2265,9 @@ watch(activeTrajectRef, () => {
           </nldd-simple-section>
         </nldd-page>
 
-        <!-- Nothing curated yet (no favorites, no traject edits, no open law):
-             leave the canvas blank - the just-in-time coach-mark on the toolbar
-             search field (AppShell) points the user at search. -->
-        <nldd-page v-else-if="isEmptyLibrary"></nldd-page>
+        <!-- Nothing curated yet (no favorites, no open law) no longer means a
+             blank canvas: the sidebar always offers "Alle regelwerken".
+             `isEmptyLibrary` still drives the search coach-mark (AppShell). -->
 
         <nldd-navigation-split-view v-else @back="onPaneBack">
 
@@ -2220,6 +2283,20 @@ watch(activeTrajectRef, () => {
                   <!-- Werkdocumenten (in a traject): a single entry that opens
                        the document list in the secondary sidebar + editor in
                        main, mirroring how a law drills into its articles. -->
+                  <!-- Corpus juris: the way into every law, not only the ones
+                       you starred or opened before. -->
+                  <template v-if="!activeTrajectRef">
+                    <nldd-list appearance="simple">
+                      <nldd-list-item size="md" button data-testid="overview-entry" :current="isOverviewMode || undefined" @click="goToOverview">
+                        <nldd-icon-cell size="20"><nldd-icon icon="books"></nldd-icon></nldd-icon-cell>
+                        <nldd-spacer-cell size="8"></nldd-spacer-cell>
+                        <nldd-text-cell text="Alle regelwerken"></nldd-text-cell>
+                        <nldd-spacer-cell size="8"></nldd-spacer-cell>
+                        <nldd-icon-cell size="20"><nldd-icon icon="chevron-right"></nldd-icon></nldd-icon-cell>
+                      </nldd-list-item>
+                    </nldd-list>
+                    <nldd-spacer size="24"></nldd-spacer>
+                  </template>
                   <template v-if="activeTrajectRef">
                     <nldd-list appearance="simple">
                       <nldd-list-item size="md" button :current="isInstellingenMode || undefined" @click="goToInstellingen()">
@@ -2381,6 +2458,11 @@ watch(activeTrajectRef, () => {
             </nldd-page>
           </nldd-split-view-pane>
 
+          <!-- Secondary Sidebar (Corpus juris overview): every law, paged. -->
+          <nldd-split-view-pane v-else-if="isOverviewMode" slot="secondary-sidebar" has-content>
+            <LawOverviewPane :back-text="LIBRARY_HOME_BACK_TEXT" @select="openLawFromOverview"></LawOverviewPane>
+          </nldd-split-view-pane>
+
           <!-- Secondary Sidebar (werkdoc mode): the document list. -->
           <nldd-split-view-pane v-else-if="isWerkdocMode" slot="secondary-sidebar" has-content>
             <nldd-page sticky-header>
@@ -2441,26 +2523,6 @@ watch(activeTrajectRef, () => {
                       :text="favorites?.has(selectedLawId) ? 'Verwijder uit favorieten' : 'Voeg toe aan favorieten'"
                       @click="onFavoriteClick"
                     >
-                      <!-- In de popup-slot: het component ankert en toggelt de
-                           popover zelf, dus een tweede klik sluit hem weer.
-                           Alleen zinvol zolang je niet bent ingelogd. -->
-                      <nldd-popover
-                        v-if="!authenticated"
-                        slot="popup"
-                        accessible-label="Inloggen"
-                        width="320px"
-                      >
-                        <nldd-container padding="16">
-                          <nldd-inline-dialog
-                            icon="login"
-                            text="Log in om regelwerken als favoriet te markeren"
-                            supporting-text="Zodra je bent ingelogd kun je regelwerken bewaren en snel terugvinden."
-                          >
-                            <nldd-button slot="actions" appearance="primary" text="Inloggen" @click="login()"></nldd-button>
-                            <nldd-button slot="actions" appearance="secondary" text="Account aanvragen" :href="accountRequestHref" @click.prevent="goToAccountRequest"></nldd-button>
-                          </nldd-inline-dialog>
-                        </nldd-container>
-                      </nldd-popover>
                     </nldd-icon-button>
                   </nldd-toolbar-item>
                   <nldd-toolbar-item v-if="canShare" slot="start" :priority="1">
@@ -2795,8 +2857,27 @@ watch(activeTrajectRef, () => {
                     <span slot="supporting-text">{{ lawName }}</span>
                   </nldd-title>
                   <nldd-spacer size="16"></nldd-spacer>
+                  <template v-if="!activeTrajectRef && lawEntry?.enriched">
+                    <nldd-banner
+                      data-testid="example-banner"
+                      variant="accent"
+                      size="sm"
+                      text="Voorbeeld, niet vastgesteld"
+                      :supporting-text="exampleSupportingText"
+                    ></nldd-banner>
+                    <nldd-spacer size="16"></nldd-spacer>
+                  </template>
+                  <template v-else-if="otherEnrichedVersion">
+                    <nldd-banner
+                      data-testid="other-version-banner"
+                      size="sm"
+                      text="Een andere versie heeft een machineversie"
+                      :supporting-text="`Deze versie heeft alleen de wettekst. De versie van ${otherEnrichedVersion} heeft ook een machineversie.`"
+                    ></nldd-banner>
+                    <nldd-spacer size="16"></nldd-spacer>
+                  </template>
                   <nldd-toolbar>
-                    <nldd-toolbar-item slot="start">
+                    <nldd-toolbar-item v-if="showMachineViews" slot="start">
                       <nldd-tab-bar size="md" @tabchange="onDetailTabChange">
                         <nldd-tab-bar-item data-view="tekst" :current="detailView === 'tekst' || undefined" text="Tekst"></nldd-tab-bar-item>
                         <nldd-tab-bar-item data-view="machine" :current="detailView === 'machine' || undefined" text="Machine"></nldd-tab-bar-item>
@@ -2809,9 +2890,9 @@ watch(activeTrajectRef, () => {
                   </nldd-toolbar>
                   <nldd-spacer size="24"></nldd-spacer>
                   <KeepAlive>
-                    <ArticleText v-if="detailView === 'tekst'" :article="selectedArticle" centered />
-                    <MachineReadable v-else-if="detailView === 'machine'" :article="selectedArticle" :can-create="!!selectedLawId" :can-enrich="canEnrich" :needs="enrichNeeds" :enriching="isEnriching" :review-ready="reviewReady" :review-article="reviewArticleForPane" :enrich-error="enrichError" :create-href="authenticated ? editLawHref : undefined" @create-mr="openEditor" @enrich="enrichSelectedLaw" @view-tasks="openTasksForLaw" @review="openReviewForLaw" @open-action="activeAction = $event" />
-                    <YamlView v-else-if="detailView === 'yaml'" :article="selectedArticle" :can-create="!!selectedLawId" :can-enrich="canEnrich" :needs="enrichNeeds" :enriching="isEnriching" :review-ready="reviewReady" :review-article="reviewArticleForPane" :enrich-error="enrichError" :create-href="authenticated ? editLawHref : undefined" @create-mr="openEditor" @enrich="enrichSelectedLaw" @view-tasks="openTasksForLaw" @review="openReviewForLaw" />
+                    <ArticleText v-if="shownDetailView === 'tekst'" :article="selectedArticle" centered />
+                    <MachineReadable v-else-if="shownDetailView === 'machine'" :article="selectedArticle" :can-create="!!selectedLawId" :can-enrich="canEnrich" :needs="enrichNeeds" :enriching="isEnriching" :review-ready="reviewReady" :review-article="reviewArticleForPane" :enrich-error="enrichError" :create-href="authenticated ? editLawHref : undefined" @create-mr="openEditor" @enrich="enrichSelectedLaw" @view-tasks="openTasksForLaw" @review="openReviewForLaw" @open-action="activeAction = $event" />
+                    <YamlView v-else-if="shownDetailView === 'yaml'" :article="selectedArticle" :can-create="!!selectedLawId" :can-enrich="canEnrich" :needs="enrichNeeds" :enriching="isEnriching" :review-ready="reviewReady" :review-article="reviewArticleForPane" :enrich-error="enrichError" :create-href="authenticated ? editLawHref : undefined" @create-mr="openEditor" @enrich="enrichSelectedLaw" @view-tasks="openTasksForLaw" @review="openReviewForLaw" />
                   </KeepAlive>
                 </nldd-simple-section>
               </template>

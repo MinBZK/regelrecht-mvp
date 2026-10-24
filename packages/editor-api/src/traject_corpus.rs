@@ -2348,6 +2348,9 @@ impl TrajectSourceRow {
             // `CorpusRegistry::index_all_sources_async` — must resolve
             // strictly, without the legacy `CORPUS_GIT_TOKEN` fallback.
             strict_auth: self.is_writable_own,
+            enriched: None,
+            load_all: false,
+            library_only: false,
         }
     }
 }
@@ -2953,6 +2956,9 @@ mod tests {
             priority: 0,
             auth_ref: None,
             strict_auth: false,
+            enriched: None,
+            load_all: false,
+            library_only: false,
         };
         let registry = CorpusRegistry::from_sources(vec![source.clone()]);
         let source_map = registry.load_local_sources("2026-06-01").unwrap();

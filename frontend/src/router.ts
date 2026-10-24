@@ -35,13 +35,20 @@ const router = createRouter({
           path: '',
           name: 'home',
           component: LibraryView,
-          meta: { title: 'Home' },
+          meta: { title: 'Corpus juris' },
         },
         {
           path: 'corpus-juris/:lawId/:articleNumber?',
           name: 'corpus-juris',
           component: LibraryView,
-          meta: { title: 'Home' },
+          meta: { title: 'Corpus juris' },
+        },
+        {
+          // Every law in Corpus juris, a page at a time (LawOverviewPane).
+          path: 'alle-regelwerken',
+          name: 'corpus-overview',
+          component: LibraryView,
+          meta: { title: 'Corpus juris' },
         },
         {
           // Traject-scoped Home landing: the same LibraryView, read through
@@ -55,7 +62,7 @@ const router = createRouter({
           path: 'trajecten/:trajectRef([a-z0-9-]+-[0-9a-f]{8})',
           name: 'traject-home',
           component: LibraryView,
-          meta: { title: 'Home', requiresAuth: true },
+          meta: { title: 'Traject', requiresAuth: true },
         },
         {
           // A law opened within a traject: `/trajecten/{ref}/corpus/{lawId}`.
@@ -63,7 +70,7 @@ const router = createRouter({
           path: 'trajecten/:trajectRef([a-z0-9-]+-[0-9a-f]{8})/corpus/:lawId/:articleNumber?',
           name: 'library-traject',
           component: LibraryView,
-          meta: { title: 'Home', requiresAuth: true },
+          meta: { title: 'Traject', requiresAuth: true },
         },
         {
           // Werkdocumenten within a traject: `/trajecten/{ref}/werkdocumenten/{docPath?}`.
@@ -355,7 +362,7 @@ router.beforeEach(async (to) => {
 // Track the last fullPath per route name so the Bibliotheek/Editor tab
 // switch can restore the user's prior position in each section.
 router.afterEach((to) => {
-  recordLastVisited(to.name, to.fullPath);
+  recordLastVisited(to.name, to.fullPath, (to.params.trajectRef as string | undefined) ?? null);
 });
 
 // document.title is owned by the route components (they reflect law + article

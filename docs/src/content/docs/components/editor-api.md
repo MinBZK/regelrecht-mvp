@@ -62,6 +62,10 @@ All public. These serve the corpus as loaded at startup, without any traject ove
 | GET | `/api/corpus/laws/{law_id}/annotations` |
 | POST | `/api/corpus/reload` (Admin) |
 
+At startup the global corpus holds every local source, the laws listed in `favorites.json` from the GitHub sources, and every law of a source marked `load_all`. The current version of a law is the one in force today among the versions loaded, across sources (see [Federated Corpus](/concepts/federated-corpus#how-it-works)).
+
+`/api/corpus/laws` (and its traject variant) filters with `q` (search), `ids` (exact ids), `source` (one source) and `enriched=true` (only laws whose current version is enriched). Each entry carries `enriched`, and, when the current version is not enriched but another version is, `enriched_version` with that version's date. A law from a source marked `enriched: false` never counts as enriched.
+
 ### Trajects
 
 Reader + account for reads, Writer + account for changes. Membership is checked in the handler.
@@ -128,7 +132,7 @@ Review tasks produced by asynchronous jobs, scoped to the account that requested
 | Method | Path | Gate |
 |--------|------|------|
 | GET | `/api/favorites` | Reader |
-| PUT, DELETE | `/api/favorites/{law_id}` | Writer |
+| PUT, DELETE | `/api/favorites/{law_id}` | Reader |
 | GET | `/api/user/settings` | Reader |
 | PUT | `/api/user/settings/{key}` | Writer (4 KiB body) |
 | GET | `/api/user/notes/{law_id}` | Reader + account |
