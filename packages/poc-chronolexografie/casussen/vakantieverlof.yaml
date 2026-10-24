@@ -39,11 +39,11 @@ voorbeeld:
   bevindingen:
     specifieke_aard_beroep_ouder: true
   bezwaar:
-    bezwaarschrift_ondertekend: true
+    bezwaar_of_beroepschrift_ondertekend: true
     naam_indiener: J. Jansen
     adres_indiener: Voorbeeldstraat 1
     omschrijving_bestreden_besluit: weigering vakantieverlof
-    gronden_bezwaar: 'verklaring van de werkgever: geen verlof in de schoolvakanties'
+    gronden_bezwaar_of_beroep: 'verklaring van de werkgever: geen verlof in de schoolvakanties'
 
 # Wat de school vastlegde vóór het eerste scenario (RFC-051), bij elke start
 # en reset opnieuw, via de cel zoals elke stap. De regeling vaststelling

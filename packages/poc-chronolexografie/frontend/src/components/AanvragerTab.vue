@@ -54,7 +54,7 @@ function startBezwaar(besluit) {
   bezwaarTegen.value = besluit;
   for (const k of Object.keys(bezwaar)) delete bezwaar[k];
   Object.assign(bezwaar, state.casus.voorbeeld.bezwaar, {
-    dagtekening_bezwaarschrift: state.datum,
+    dagtekening_bezwaar_of_beroepschrift: state.datum,
   });
 }
 

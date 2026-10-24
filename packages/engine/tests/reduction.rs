@@ -917,7 +917,7 @@ fn revoked_on_objection_with(
     let parameters = BTreeMap::from([
         ("bestreden_besluit".to_string(), Value::from(refusal_b())),
         (
-            "bezwaarschrift_tijdig_ingediend".to_string(),
+            "bezwaar_of_beroepschrift_tijdig_ingediend".to_string(),
             Value::Bool(true),
         ),
     ]);
@@ -975,7 +975,7 @@ fn in_the_call_anew_without_an_answerer_the_finding_is_missing() {
     let parameters = BTreeMap::from([
         ("bestreden_besluit".to_string(), Value::from(refusal_b())),
         (
-            "bezwaarschrift_tijdig_ingediend".to_string(),
+            "bezwaar_of_beroepschrift_tijdig_ingediend".to_string(),
             Value::Bool(true),
         ),
     ]);

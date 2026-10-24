@@ -60,6 +60,7 @@ A reader meets these constructs in a rulework or a running service whatever the 
 | RFC-050 | Superseded: merged into RFC-045, RFC-046 and RFC-048 | [Applications, Decisions and Objections](../concepts/administrative-procedures), [Calling the decision of an article](../concepts/cross-law-references#calling-the-decision-of-an-article) |
 | RFC-051 | Facts and competence in the law format (a fact in `requires`, `competent_authority` and `combine` on an open term) | [Competent Authority](../concepts/competent-authority#who-answers-an-open-term), [Schema](./schema) |
 | RFC-052 | Superseded: merged into RFC-045, RFC-046, RFC-048 and RFC-051 | [Competent Authority](../concepts/competent-authority#who-answers-an-open-term) |
+| RFC-053 | The appeal to the administrative court (`BEROEP`, `UITSPRAAK`, Awb 8:70 and 8:72) | [Applications, Decisions and Objections](../concepts/administrative-procedures#appeal), [Schema](./schema) |
 
 ## Backlog
 

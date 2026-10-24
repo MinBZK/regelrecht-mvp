@@ -136,10 +136,10 @@ describe('stapTekst', () => {
   });
 
   it('zegt bij een uitkomst die niet te bepalen was wat ontbrak', () => {
-    const stap = { soort: 'uitkomst', naam: 'bezwaarschrift_tijdig_ingediend', waarde: null, ontbreekt: ['datum_ontvangst_bezwaarschrift'] };
+    const stap = { soort: 'uitkomst', naam: 'bezwaar_of_beroepschrift_tijdig_ingediend', waarde: null, ontbreekt: ['datum_ontvangst_bezwaar_of_beroepschrift'] };
     expect(stapTekst(stap, grammen)).toEqual({
-      tekst: 'bezwaarschrift tijdig ingediend: niet bepaald',
-      toelichting: 'ontbreekt: datum ontvangst bezwaarschrift',
+      tekst: 'bezwaar of beroepschrift tijdig ingediend: niet bepaald',
+      toelichting: 'ontbreekt: datum ontvangst bezwaar of beroepschrift',
     });
   });
 

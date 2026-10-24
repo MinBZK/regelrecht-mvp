@@ -1,6 +1,6 @@
 ---
 title: "Applications, Decisions and Objections"
-description: "How the law format models an Awb procedure: what an article establishes, the hooks on an application, the stages of a decision, and an objection that takes a decision again."
+description: "How the law format models an Awb procedure: what an article establishes, the hooks on an application, the stages of a decision, an objection that takes a decision again, and the appeal to the court."
 ---
 
 A specific law says someone may apply. The procedure around it comes from the Algemene wet bestuursrecht (Awb), from the application to the objection. The rulework of the specific law need not name the Awb, because Awb articles hook onto every application.
@@ -47,9 +47,10 @@ Run at one stage of its procedure ([RFC-008](/rfcs/rfc-008)), an article compute
 
 | Stage | What runs |
 |---|---|
-| AANVRAAG, BEZWAAR | The hooks on the submission of that kind (Awb 4:2 and 4:13; 6:5, 6:9 and 7:10). No decision output |
+| AANVRAAG, BEZWAAR, BEROEP | The hooks on the submission of that kind (Awb 4:2 and 4:13 on an application; 6:5 and 6:9 on an objection and an appeal; 7:10 on an objection). No decision output |
 | BESLUIT | The decision, with Awb 3:46 and 6:7 |
 | BEKENDMAKING | Awb 6:8: the objection period starts |
+| UITSPRAAK, TOEZENDING | The judgment on an appeal, and handing over its copy (Awb 8:79); the procedure `beroep` |
 
 Without a procedure (a scenario, the editor) every hook fires at once.
 
@@ -95,12 +96,45 @@ The call runs on the day of the decision on the objection, with the contested de
 
 Only `outputs` count. A `derived` end date that moves with the day gives no cause.
 
+## Appeal
+
+Against the decision on the objection, a belanghebbende can go to court (Awb 8:1). Awb 8:70 establishes the appeal and decides on it, as 7:11 does for the objection. The judgment is of the kind `UITSPRAAK`: a court is not an administrative body (Awb 1:1 lid 2 onder c), so what it decides is not a besluit. It follows a procedure of its own, `beroep`, with the stages BEROEP, UITSPRAAK and TOEZENDING.
+
+```yaml
+# Awb 8:70
+produces:
+  - type: BEROEP
+    requests: algemene_wet_bestuursrecht#8:70
+    parameters: [bestreden_besluit]
+  - type: UITSPRAAK
+    outputs: [beroep_ontvankelijk, beroep_gegrond, uitspraak_strekt_tot,
+              geschonden_geoordeelde_rechtsregel, bestreden_besluit_vernietigd,
+              rechtsgevolgen_vernietigd, opdracht_nieuw_besluit,
+              termijn_nieuw_besluit_einddatum]
+```
+
+- Awb 6:5 and 6:9 hook onto the appeal as onto the objection; their text speaks of the "bezwaar- of beroepschrift", and so do their names: `termijn_einddatum`, `bezwaar_of_beroepschrift_tijdig_ingediend`. On a decision on objection, `termijn_einddatum` is the last day for lodging the appeal.
+- An appeal is admissible when it came in on time, when the contested decision was taken on objection (`taken_on` is 7:11, Awb 7:1 lid 1), and when the court finds the appellant an interested party (8:1).
+- Whether the appeal is well founded is the court's judgement: whether the decision breaches a rule of law, and which (8:77 lid 2). These are open terms with `decided_per_case_by`, given as findings.
+- When well founded, 8:70 reads 8:72. The court annuls the decision, and its legal effects go with it unless the court keeps them (lid 3 onder a). Otherwise it orders a new decision, within a term if it sets one (lid 4).
+
+| Situation | Result |
+|---|---|
+| Late (Awb 6:9) | Not admissible; the court judges nothing |
+| Against a decision on an application, without objection (Awb 7:1 lid 1) | Not admissible |
+| No rule breached | Unfounded; the decision stands |
+| A rule breached, effects not kept | Well founded: annulled, with an order for a new decision |
+| A rule breached, effects kept | Well founded: annulled, no new decision |
+
+[RFC-053](/rfcs/rfc-053) gives the design. `corpus/regulation/nl/wet/algemene_wet_bestuursrecht/scenarios/beroep.feature` plays these cases.
+
 ## Open points
 
 Listed only when a choice is still to be made, when it needs investigation first, or when it needs a large refactor or a breaking change to the schema. [Open Points in Chronolexography](/concepts/chronolexography-open-points) gives the rule.
 
 | Point | Why open |
 |---|---|
-| Stages are an Awb detail built into the format. The schema calls `procedure` Awb-defined, and a hook's `stage` defaults to `BESLUIT`. The engine uses `BESLUIT` and the submission kinds (`AANVRAAG`, `BEZWAAR`) as stages, and the cell runs `BESLUIT` and `BEKENDMAKING` by name. Should stages stay, as a free field that the law defining the procedure fills? | Choice; breaking schema change |
+| Stages are an Awb detail built into the format. The schema calls `procedure` Awb-defined, and a hook's `stage` defaults to `BESLUIT`. The engine uses `BESLUIT` and the submission kinds (`AANVRAAG`, `BEZWAAR`) as stages, and the cell runs `BESLUIT` and `BEKENDMAKING` by name. Should stages stay, as a free field that the law defining the procedure fills? A run without a stage, such as a scenario, counts as `BESLUIT`. A procedure without that stage, such as `beroep` (UITSPRAAK, TOEZENDING), then fires no stage hooks; no such hooks exist yet. | Choice; breaking schema change |
 | `decision_type` is fixed per article, while one article grants or refuses. The value says nothing about the outcome, and no hook in the corpus filters on it. [RFC-022](/rfcs/rfc-022) proposes an open vocabulary. Drop it, derive it from the outcome, or keep it as a free field? | Choice; breaking schema change |
+| Awb 8:72 lid 4 says the court "kan" order a new decision. The model orders one whenever the court annuls and keeps neither the legal effects nor decides the case itself, and it does not model the court's instructions. Should the order be a finding of the court instead? | Choice |
 | The edge from 7:11 to the article it calls is known only at run time. The dependency graph, the editor and the type checker do not see it. | Large refactor |

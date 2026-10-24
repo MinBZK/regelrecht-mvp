@@ -30,8 +30,8 @@ Feature: Het besluit op de aanvraag om vakantieverlof
     Then output "verlof_raakt_eerste_twee_lesweken" is false
     Then output "motivering_vereist" is true
     Then output "motivering_vereist" has reactive provenance
-    Then output "bezwaartermijn_weken" equals 6
-    Then output "bezwaartermijn_weken" has reactive provenance
+    Then output "termijn_weken" equals 6
+    Then output "termijn_weken" has reactive provenance
 
   Scenario: Twee weken met het weekend ertussen zijn tien schooldagen
     Given the following parameters:

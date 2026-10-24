@@ -377,10 +377,7 @@ fn a_driver_with_a_long_term_walking_limitation_gets_a_card_for_five_years() {
     assert_eq!(gram.outputs["kaart_geldig_tot"], json!("2031-10-19"));
     // The Awb on the decision.
     assert_eq!(gram.outputs["motivering_vereist"], json!(true));
-    assert_eq!(
-        gram.outputs["bezwaartermijn_einddatum"],
-        json!("2026-12-01")
-    );
+    assert_eq!(gram.outputs["termijn_einddatum"], json!("2026-12-01"));
     // What the policy filled for art. 49, and the college's findings.
     assert_eq!(gram.fields[POWER], json!(true));
     assert_eq!(gram.fields[WALKING], json!(true));
@@ -400,7 +397,7 @@ fn without_a_limitation_from_the_medical_examination_the_card_is_refused() {
     assert_eq!(gram.outputs["kaart_geldig_tot"], Value::Null);
     // A refusal is a decision too: motivated and open to objection.
     assert_eq!(gram.outputs["motivering_vereist"], json!(true));
-    assert_eq!(gram.outputs["bezwaartermijn_weken"], json!(6));
+    assert_eq!(gram.outputs["termijn_weken"], json!(6));
 }
 
 #[test]
@@ -546,12 +543,12 @@ fn a_cell_lists_the_answers_it_gives_and_the_terms_they_fill() {
 /// A complete objection on the ground `ground`, and `with`.
 fn objection(ground: &str, with: &[(&str, Value)]) -> Map<String, Value> {
     let mut supplied = object_map(json!({
-        "bezwaarschrift_ondertekend": true,
+        "bezwaar_of_beroepschrift_ondertekend": true,
         "naam_indiener": "A. de Vries",
         "adres_indiener": "Voorbeeldlaan 2",
-        "dagtekening_bezwaarschrift": "2026-11-01",
+        "dagtekening_bezwaar_of_beroepschrift": "2026-11-01",
         "omschrijving_bestreden_besluit": "besluit op de aanvraag om een gehandicaptenparkeerkaart",
-        "gronden_bezwaar": ground,
+        "gronden_bezwaar_of_beroep": ground,
     }));
     for (name, value) in with {
         supplied.insert((*name).into(), value.clone());
@@ -636,12 +633,9 @@ fn ongegrond_the_same_examination_refuses_again_and_the_refusal_stands() {
         "2026-11-01",
     )
     .unwrap();
+    assert_eq!(bezwaar.fields["termijn_einddatum"], json!("2026-12-01"));
     assert_eq!(
-        bezwaar.fields["bezwaartermijn_einddatum"],
-        json!("2026-12-01")
-    );
-    assert_eq!(
-        bezwaar.outputs["bezwaarschrift_tijdig_ingediend"],
+        bezwaar.outputs["bezwaar_of_beroepschrift_tijdig_ingediend"],
         json!(true)
     );
 

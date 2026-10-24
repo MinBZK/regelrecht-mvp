@@ -510,10 +510,10 @@ fn the_awb_hooks_on_the_decision_land_in_its_gram_and_not_in_the_application() {
     let awb = |article: &str| format!("{AWB}#{article}");
     for (output, value, article) in [
         ("motivering_vereist", json!(true), "3:46"),
-        ("bezwaartermijn_weken", json!(6), "6:7"),
+        ("termijn_weken", json!(6), "6:7"),
         // Made known on the day of the decision (assumption of the cell).
-        ("bezwaartermijn_startdatum", json!("2026-10-21"), "6:8"),
-        ("bezwaartermijn_einddatum", json!("2026-12-01"), "6:8"),
+        ("termijn_startdatum", json!("2026-10-21"), "6:8"),
+        ("termijn_einddatum", json!("2026-12-01"), "6:8"),
     ] {
         assert_eq!(gram.outputs[output], value, "{output}");
         let stage = usize::from(article == "6:8");
@@ -540,7 +540,7 @@ fn eleven_school_days_are_refused() {
     assert_eq!(gram.outputs["verlof_verleend"], json!(false));
     // A refusal is a decision too: it is motivated and open to objection.
     assert_eq!(gram.outputs["motivering_vereist"], json!(true));
-    assert_eq!(gram.outputs["bezwaartermijn_weken"], json!(6));
+    assert_eq!(gram.outputs["termijn_weken"], json!(6));
 }
 
 #[test]
@@ -1138,7 +1138,7 @@ fn an_answer_whose_reduction_the_service_does_not_hold_is_refused() {
 
 /// Awb 7:11 decides on the objection and establishes it.
 const OBJECTION: &str = "7:11";
-const TIMELY: &str = "bezwaarschrift_tijdig_ingediend";
+const TIMELY: &str = "bezwaar_of_beroepschrift_tijdig_ingediend";
 const ADMISSIBLE: &str = "bezwaar_ontvankelijk";
 const CAUSE: &str = "heroverweging_geeft_aanleiding";
 const REVOKED: &str = "bestreden_besluit_herroepen";
@@ -1147,12 +1147,12 @@ const NEW: &str = "nieuw_besluit";
 /// A complete objection, with fictional data, and `with`.
 fn objection(with: &[(&str, &str)]) -> Map<String, Value> {
     let mut supplied = json!({
-        "bezwaarschrift_ondertekend": true,
+        "bezwaar_of_beroepschrift_ondertekend": true,
         "naam_indiener": "J. Jansen",
         "adres_indiener": "Voorbeeldstraat 1",
-        "dagtekening_bezwaarschrift": "2026-11-01",
+        "dagtekening_bezwaar_of_beroepschrift": "2026-11-01",
         "omschrijving_bestreden_besluit": "weigering vakantieverlof",
-        "gronden_bezwaar": "verklaring van de werkgever: geen verlof in de schoolvakanties",
+        "gronden_bezwaar_of_beroep": "verklaring van de werkgever: geen verlof in de schoolvakanties",
     })
     .as_object()
     .unwrap()
@@ -1237,21 +1237,24 @@ fn the_shape_of_the_objection_comes_from_the_awb() {
         vec![
             ("bestreden_besluit", "algemene_wet_bestuursrecht#7:11"),
             (
-                "bezwaarschrift_ondertekend",
+                "bezwaar_of_beroepschrift_ondertekend",
                 "algemene_wet_bestuursrecht#6:5"
             ),
             ("naam_indiener", "algemene_wet_bestuursrecht#6:5"),
             ("adres_indiener", "algemene_wet_bestuursrecht#6:5"),
             (
-                "dagtekening_bezwaarschrift",
+                "dagtekening_bezwaar_of_beroepschrift",
                 "algemene_wet_bestuursrecht#6:5"
             ),
             (
                 "omschrijving_bestreden_besluit",
                 "algemene_wet_bestuursrecht#6:5"
             ),
-            ("gronden_bezwaar", "algemene_wet_bestuursrecht#6:5"),
-            ("bezwaartermijn_einddatum", "algemene_wet_bestuursrecht#6:9"),
+            (
+                "gronden_bezwaar_of_beroep",
+                "algemene_wet_bestuursrecht#6:5"
+            ),
+            ("termijn_einddatum", "algemene_wet_bestuursrecht#6:9"),
         ]
     );
     // What 6:9 gives is no field, though 7:11 asks it.
@@ -1264,7 +1267,7 @@ fn the_shape_of_the_objection_comes_from_the_awb() {
     let moment = shape.moment.unwrap();
     assert_eq!(
         moment.parameter.as_deref(),
-        Some("datum_ontvangst_bezwaarschrift")
+        Some("datum_ontvangst_bezwaar_of_beroepschrift")
     );
     assert_eq!(moment.declared_by, "algemene_wet_bestuursrecht#6:9");
 }
@@ -1297,15 +1300,15 @@ fn an_objection_refers_to_the_decision_and_takes_its_period_from_it() {
     // The contested decision, by its id.
     assert_eq!(gram.fields["bestreden_besluit"], json!(refused.id));
     // The period comes from the contested decision.
-    assert_eq!(gram.fields["bezwaartermijn_einddatum"], json!("2026-12-01"));
+    assert_eq!(gram.fields["termijn_einddatum"], json!("2026-12-01"));
     assert_eq!(
-        gram.fields["bezwaartermijn_einddatum"],
-        refused.outputs["bezwaartermijn_einddatum"]
+        gram.fields["termijn_einddatum"],
+        refused.outputs["termijn_einddatum"]
     );
     assert_eq!(gram.moment.as_ref().unwrap().on, day("2026-11-01"));
     assert_eq!(gram.outputs[TIMELY], json!(true));
     assert_eq!(
-        gram.outputs["bezwaarschrift_bevat_wat_artikel_6_5_eist"],
+        gram.outputs["bezwaar_of_beroepschrift_bevat_wat_artikel_6_5_eist"],
         json!(true)
     );
     // Awb 7:10: six weeks from the day after the period ends.
@@ -1323,7 +1326,7 @@ fn the_objector_does_not_supply_what_the_decision_holds_or_the_law_does_not_ask(
     let refused = apply_and_decide(&mut cell, "2027-02-01", "2027-02-16", "2026-10-20");
     for (name, value, says) in [
         (
-            "bezwaartermijn_einddatum",
+            "termijn_einddatum",
             "2027-01-01",
             "comes from the decision it refers to",
         ),
@@ -1334,7 +1337,7 @@ fn the_objector_does_not_supply_what_the_decision_holds_or_the_law_does_not_ask(
         ),
         ("bestemming", "Lissabon", "does not ask 'bestemming'"),
         (
-            "datum_ontvangst_bezwaarschrift",
+            "datum_ontvangst_bezwaar_of_beroepschrift",
             "2026-10-25",
             "moment that counts",
         ),
@@ -1346,7 +1349,7 @@ fn the_objector_does_not_supply_what_the_decision_holds_or_the_law_does_not_ask(
             "true",
             "does not ask",
         ),
-        ("bezwaarschrift_ondertekend", "ja", "does not fit"),
+        ("bezwaar_of_beroepschrift_ondertekend", "ja", "does not fit"),
     ] {
         let e = object(
             &mut cell,
@@ -1434,10 +1437,7 @@ fn a_second_application_upheld_on_objection_stands() {
     // The decision on the objection is a beschikking: motivated (3:46), and
     // open to appeal within six weeks (6:7, 6:8).
     assert_eq!(decision.outputs["motivering_vereist"], json!(true));
-    assert_eq!(
-        decision.outputs["bezwaartermijn_einddatum"],
-        json!("2027-05-13")
-    );
+    assert_eq!(decision.outputs["termijn_einddatum"], json!("2027-05-13"));
     assert_eq!(cell.grams().len(), 6);
 
     // Decided once.
@@ -1482,10 +1482,10 @@ fn grounds_on_objection_lead_the_head_to_judge_anew_and_revoke_the_refusal() {
     assert_eq!(new.outputs["verlof_verleend"], json!(true));
     // The new decision has its own period, from its own announcement (Awb
     // 6:7, 6:8), not that of the revoked one.
-    assert_eq!(new.outputs["bezwaartermijn_einddatum"], json!("2026-12-27"));
+    assert_eq!(new.outputs["termijn_einddatum"], json!("2026-12-27"));
     assert_ne!(
-        new.outputs["bezwaartermijn_einddatum"],
-        refused.outputs["bezwaartermijn_einddatum"]
+        new.outputs["termijn_einddatum"],
+        refused.outputs["termijn_einddatum"]
     );
     assert_eq!(cell.grams().len(), 5);
 
