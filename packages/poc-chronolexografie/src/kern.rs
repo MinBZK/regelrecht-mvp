@@ -3082,8 +3082,8 @@ mod tests {
         // catalogue names (RFC-048), what those read: the head's policy with
         // its norm and its bindings, the reduction of the Awb, the regeling
         // and the school's policy on its rooster, and the policy that
-        // requires the fact of its vestiging. The Wet op het primair onderwijs is only the regeling's
-        // legal basis.
+        // requires the fact of its vestiging. The Wet op het primair
+        // onderwijs is only the regeling's legal basis.
         let verlof = corpus();
         let a = &verlof.afleiding;
         assert_eq!((a.law.as_str(), a.article.as_str()), (LAW, ARTICLE));

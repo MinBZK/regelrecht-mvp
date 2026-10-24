@@ -88,6 +88,19 @@ fn on_objection(contested: &serde_json::Value, revoked: bool) -> serde_json::Val
     })
 }
 
+/// [`on_objection`], which revoked `contested` and took `instead` in its
+/// place, or upheld it (`instead` is None), under the id `id`.
+fn revoked_for(
+    id: &str,
+    contested: &serde_json::Value,
+    instead: Option<&serde_json::Value>,
+) -> serde_json::Value {
+    let mut decision = on_objection(contested, instead.is_some());
+    decision["id"] = json!(id);
+    decision["nieuw_besluit"] = json!(instead.map(|d| d["id"].clone()));
+    decision
+}
+
 fn evaluate(
     service: &LawExecutionService,
     bsn: &str,
@@ -1043,30 +1056,20 @@ fn awb_service() -> LawExecutionService {
     service
 }
 
-/// A decision on an objection against `contested` that revoked it and took
-/// `instead` in its place, or upheld it (`instead` is None).
-fn revoked_for(
-    id: &str,
-    contested: &serde_json::Value,
-    instead: Option<&serde_json::Value>,
-) -> serde_json::Value {
-    json!({
-        "id": id,
-        "bestreden_besluit": contested["id"],
-        "bezwaar_ontvankelijk": true,
-        "bestreden_besluit_herroepen": instead.is_some(),
-        "nieuw_besluit": instead.map(|d| d["id"].clone()),
-    })
+/// The receipt of a judgment about the decision `about`, that annulled it
+/// with its legal effects, and set `in_place` in its place.
+fn judgment(about: &str, in_place: serde_json::Value) -> serde_json::Value {
+    judgment_keeping(about, false, in_place)
 }
 
-/// The receipt of a judgment about the decision `about`, that annulled it
-/// with its legal effects or not, and set `in_place` in its place.
-fn judgment(about: &str, annulled: bool, in_place: serde_json::Value) -> serde_json::Value {
+/// [`judgment`], where the court kept the legal effects of the annulled
+/// decision or not (Awb 8:72 lid 3 onder a).
+fn judgment_keeping(about: &str, kept: bool, in_place: serde_json::Value) -> serde_json::Value {
     json!({
         "id": format!("uitspraak-{about}"),
         "refers_to": about,
-        "bestreden_besluit_vernietigd": annulled,
-        "rechtsgevolgen_vernietigd": annulled,
+        "bestreden_besluit_vernietigd": true,
+        "rechtsgevolgen_vernietigd": !kept,
         "uitspraak_in_de_plaats": in_place,
     })
 }
@@ -1140,7 +1143,7 @@ fn an_annulled_decision_on_objection_revives_the_contested_decision() {
     let rows = standing(
         json!([a, b]),
         on_objection.clone(),
-        json!([judgment("x", true, json!(null))]),
+        json!([judgment("x", json!(null))]),
     );
     assert_eq!(rows, [a["id"].as_str().unwrap()]);
     // Annulled with the legal effects left in place (8:72 lid 3 onder a):
@@ -1148,7 +1151,7 @@ fn an_annulled_decision_on_objection_revives_the_contested_decision() {
     let rows = standing(
         json!([a, b]),
         on_objection,
-        json!([judgment("x", false, json!(null))]),
+        json!([judgment_keeping("x", true, json!(null))]),
     );
     assert_eq!(rows, [b["id"].as_str().unwrap()]);
 }
@@ -1159,7 +1162,7 @@ fn an_annulled_decision_drops_out() {
     let rows = standing(
         json!([a]),
         json!([]),
-        json!([judgment(a["id"].as_str().unwrap(), true, json!(null))]),
+        json!([judgment(a["id"].as_str().unwrap(), json!(null))]),
     );
     assert!(rows.is_empty(), "{rows:?}");
 }
@@ -1174,7 +1177,7 @@ fn a_revocation_in_the_decision_the_court_set_in_place_holds() {
     );
     let rows = json!([a]);
     let on_objection = json!([revoked_for("x", &a, None)]);
-    let judgments = json!([judgment("x", true, in_place)]);
+    let judgments = json!([judgment("x", in_place)]);
     assert_eq!(
         awb_output(
             rows.clone(),
@@ -1228,11 +1231,11 @@ fn the_decisions_the_court_set_in_place_come_from_either_path() {
     );
     let other = value_under("een_andere_wet#1", json!({ "toegekend": true }));
     let judgments = json!([
-        judgment("a", true, direct.clone()),
-        judgment("b", true, on_objection),
-        judgment("c", true, upheld),
-        judgment("d", true, other.clone()),
-        judgment("e", false, json!(null)),
+        judgment("a", direct.clone()),
+        judgment("b", on_objection),
+        judgment("c", upheld),
+        judgment("d", other.clone()),
+        judgment_keeping("e", true, json!(null)),
     ]);
     assert_eq!(in_place(judgments.clone(), LEAVE), json!([direct, anew]));
     assert_eq!(
@@ -1240,4 +1243,29 @@ fn the_decisions_the_court_set_in_place_come_from_either_path() {
         json!([other])
     );
     assert_eq!(in_place(judgments, "nog_een_wet#1"), json!([]));
+}
+
+#[test]
+fn a_decision_the_court_set_in_place_under_another_article_revokes_nothing() {
+    // The court decided on the contested decision itself, not on a decision
+    // on objection: that value has no bestreden_besluit_herroepen, and the
+    // reduction must not read it.
+    let a = decision("999990019", "2026-10-05", true);
+    let id = a["id"].as_str().unwrap();
+    let in_place = value_under(
+        "leerplichtwet_1969#13a",
+        json!({ "verlof_verleend": false }),
+    );
+    let judgments = json!([judgment(id, in_place)]);
+    assert_eq!(
+        awb_output(
+            json!([a]),
+            json!([]),
+            judgments.clone(),
+            "beslissingen_herroepen_bij_uitspraak"
+        ),
+        json!([])
+    );
+    // The decision itself is annulled, so it no longer stands.
+    assert!(standing(json!([a]), json!([]), judgments).is_empty());
 }
