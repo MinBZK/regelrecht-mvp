@@ -41,7 +41,7 @@ fn esc(s: &str) -> String {
 /// `overscroll-behavior: contain` at full content height, and the mouse wheel
 /// does nothing.
 ///
-/// Until design system 0.8.100 this element was called `nldd-app-view`. The
+/// Before design system 0.8.100 this element was called `nldd-app-view`. The
 /// old tag is not an error, only an element that never upgrades — which is how
 /// the wheel broke after the bump to 0.9.0.
 fn omhulsel(titel: &str, inhoud: &str) -> String {
@@ -368,6 +368,22 @@ mod tests {
         Registry::from_yaml(include_str!("../../../pocs/registry.yaml")).expect("valid")
     }
 
+    /// Every `nldd-*` tag the two pages render, without the `nldd-` prefix.
+    /// The failed login renders the most: it adds the error banner.
+    fn rendered_nldd_tags() -> std::collections::BTreeSet<String> {
+        let r = registry();
+        let mut html = index(&r);
+        html.push_str(&inloggen(r.get("napp").expect("napp"), "/napp/", true));
+        html.match_indices("<nldd-")
+            .map(|(i, _)| {
+                html[i + "<nldd-".len()..]
+                    .chars()
+                    .take_while(|c| c.is_ascii_lowercase() || *c == '-')
+                    .collect()
+            })
+            .collect()
+    }
+
     #[test]
     fn the_index_lists_every_poc_in_the_register() {
         let r = registry();
@@ -414,26 +430,22 @@ mod tests {
     /// of complaint; for the root that cost the mouse wheel.
     #[test]
     fn every_tag_on_the_pages_is_imported_by_the_bundle() {
-        const BUNDEL: &str = include_str!("../../../frontend-poc-portal/nldd-components.js");
+        const BUNDLE: &str = include_str!("../../../frontend-poc-portal/nldd-components.js");
         // Components that come in through another component's entry point.
-        const VIA: &[(&str, &str)] = &[("menu-item", "menu")];
+        // An explicit table rather than the prefix rule of
+        // `script/nldd-imports.mjs`: that rule needs the package's own entry
+        // list to know `page-footer` is not shipped by `page`, and this test
+        // cannot see it.
+        const SHIPPED_WITH: &[(&str, &str)] = &[("menu-item", "menu")];
 
-        let r = registry();
-        let mut html = index(&r);
-        html.push_str(&inloggen(r.get("napp").expect("napp"), "/napp/", true));
-
-        for (i, _) in html.match_indices("<nldd-") {
-            let naam: String = html[i + "<nldd-".len()..]
-                .chars()
-                .take_while(|c| c.is_ascii_lowercase() || *c == '-')
-                .collect();
-            let ingang = VIA
+        for tag in rendered_nldd_tags() {
+            let entry = SHIPPED_WITH
                 .iter()
-                .find(|(tag, _)| *tag == naam)
-                .map_or(naam.as_str(), |(_, ingang)| ingang);
+                .find(|(sub, _)| *sub == tag)
+                .map_or(tag.as_str(), |(_, parent)| parent);
             assert!(
-                BUNDEL.contains(&format!("import '@nldd/design-system/{ingang}';")),
-                "nldd-{naam} is rendered but frontend-poc-portal/nldd-components.js does not import it",
+                BUNDLE.contains(&format!("import '@nldd/design-system/{entry}';")),
+                "nldd-{tag} is rendered but frontend-poc-portal/nldd-components.js does not import it",
             );
         }
     }
@@ -589,15 +601,8 @@ mod tests {
             "nldd-menu",
             "nldd-menu-item",
         ];
-        let r = registry();
-        let mut html = index(&r);
-        html.push_str(&inloggen(r.get("napp").expect("napp"), "/napp/", true));
-
-        for (i, _) in html.match_indices("<nldd-") {
-            let naam: String = html[i + 1..]
-                .chars()
-                .take_while(|c| c.is_ascii_lowercase() || *c == '-')
-                .collect();
+        for tag in rendered_nldd_tags() {
+            let naam = format!("nldd-{tag}");
             assert!(
                 BESTAAT.contains(&naam.as_str()),
                 "{naam} is not in the design system — check its .d.ts before using it",
