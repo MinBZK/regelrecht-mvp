@@ -5089,13 +5089,8 @@ impl LawExecutionService {
                     provider: Some(keeper.clone()),
                     scope: Some(law.id.clone()),
                 });
-                let count = match &rows {
-                    Value::Array(rows) => rows.len(),
-                    _ => 0,
-                };
-                res_ctx.trace_set_message(format!(
-                    "Resolving from the chronicle of {keeper}: {read}, {count} row(s)"
-                ));
+                res_ctx
+                    .trace_set_message(format!("Resolving from the chronicle of {keeper}: {read}"));
                 return Ok(rows);
             }
         }
