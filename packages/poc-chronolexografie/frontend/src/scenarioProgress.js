@@ -28,7 +28,7 @@ export function counts() {
   return {
     aanvragen: aanvragen().length,
     // Per application that has a decision, in order: whether it grants.
-    beslist: aanvragen()
+    decided: aanvragen()
       .map((a) => besluitOp(a.id))
       .filter(Boolean)
       .map((g) => !!toegewezen(g)),
@@ -40,7 +40,7 @@ export function counts() {
     ).length,
     nietOntvankelijk: beslissingen.filter((g) => uit(g).bezwaar_ontvankelijk === false).length,
     // A decision on an objection taken after a judgment was received.
-    herbeslissingen: beslissingen.filter((g) => g.after).length,
+    redecisions: beslissingen.filter((g) => g.after).length,
     beroepen: state.rechter.filter((g) => g.kind === 'BEROEP').length,
     uitspraken: state.rechter.filter((g) => g.kind === 'UITSPRAAK').length,
     ontvangsten: state.grammen.filter(isOntvangst).length,

@@ -22,9 +22,9 @@ import { refused } from './scenarioProgress.js';
 const expectation = (check, text) => ({ check, text });
 // The n-th decision on an application grants, or rejects.
 const granted = (n = 1) =>
-  expectation((k) => k.beslist[n - 1] === true, 'hier hoort het besluit toe te wijzen');
+  expectation((k) => k.decided[n - 1] === true, 'hier hoort het besluit de aanvraag toe te wijzen');
 const rejected = (n = 1) =>
-  expectation((k) => k.beslist[n - 1] === false, 'hier hoort het besluit af te wijzen');
+  expectation((k) => k.decided[n - 1] === false, 'hier hoort het besluit de aanvraag af te wijzen');
 const upheld = (n = 1) =>
   expectation((k) => k.gegrond >= n, 'hier hoort het bezwaar gegrond te zijn');
 const dismissed = (n = 1) =>
@@ -53,7 +53,7 @@ const decide = ({ n = 1, outcome, ...o } = {}) => ({
   expect: outcome && { granted, rejected }[outcome](n),
   todo: 'Klik onder Open aanvragen op Besluit nemen.',
   seen: 'Het besluit staat onder Besluiten. Bij Aanvrager staat de aanvraag niet meer op In behandeling.',
-  done: (k) => k.beslist.length >= n,
+  done: (k) => k.decided.length >= n,
   ...o,
 });
 
@@ -61,7 +61,7 @@ const object = ({ n = 1, ...o } = {}) => ({
   title: n === 1 ? 'Bezwaar maken' : 'Nog een bezwaar maken',
   tab: 'aanvrager',
   todo: 'Klik bij het besluit op Bezwaar maken en dan op Bezwaar indienen.',
-  seen: 'Het bezwaar staat in het dossier en verwijst naar het besluit. Het bestreden besluit en de termijn nam de cel uit dat besluit; de aanvraag verandert niet.',
+  seen: 'Het bezwaar staat in het dossier en verwijst naar het besluit. De cel nam het bestreden besluit en de termijn uit dat besluit. De aanvraag verandert niet.',
   done: (k) => k.bezwaren >= n,
   ...o,
 });
@@ -80,7 +80,7 @@ const appeal = (o = {}) => ({
   tab: 'aanvrager',
   date: '2026-12-01',
   todo: 'Klik bij de beslissing op bezwaar op Beroep instellen en dan op Beroepschrift indienen.',
-  seen: 'Het beroep staat in de kroniek van Rechtbank Wilgendaal, met het afschrift dat de uitvoerder van haar beslissing maakte: twee cellen, twee kronieken (zie Kroniek).',
+  seen: 'Het beroep staat in de kroniek van Rechtbank Wilgendaal, met het afschrift dat het bestuursorgaan van zijn beslissing maakte. Rechtbank en bestuursorgaan hebben elk een eigen kroniek; beide staan onder Kroniek.',
   done: (k) => k.beroepen >= 1,
   ...o,
 });
@@ -90,7 +90,7 @@ const judge = (o = {}) => ({
   tab: 'andere',
   date: '2027-01-11',
   todo: 'Klik onder Ingekomen beroepen op Uitspraak doen.',
-  seen: 'De uitspraak staat onder Uitspraken, in de kroniek van de rechtbank. De uitvoerder weet er nog niets van.',
+  seen: 'De uitspraak staat onder Uitspraken, in de kroniek van de rechtbank. Het bestuursorgaan weet er nog niets van.',
   done: (k) => k.uitspraken >= 1,
   ...o,
 });
@@ -99,7 +99,7 @@ const send = (o = {}) => ({
   title: 'Toezenden',
   tab: 'andere',
   todo: 'Klik bij de uitspraak op Toezenden.',
-  seen: 'De uitvoerder legt de ontvangst vast in haar eigen kroniek (Awb 8:79).',
+  seen: 'Het bestuursorgaan legt de ontvangst vast in zijn eigen kroniek (Awb 8:79).',
   done: (k) => k.ontvangsten >= 1,
   ...o,
 });
@@ -125,7 +125,7 @@ const vakantieverlof = [
   {
     name: 'Afwijzing, bezwaar en heroverweging: gegrond',
     summary:
-      'Het hoofd weigert, de ouder maakt bezwaar, en bij heroverweging komt er alsnog verlof.',
+      'Het hoofd weigert het verlof, maar na het bezwaar van de ouder krijgt de jongere bij heroverweging alsnog verlof.',
     steps: [
       apply(),
       decide({
@@ -152,7 +152,7 @@ const vakantieverlof = [
       apply(),
       decide({
         todo: 'Klik op Besluit nemen.',
-        seen: 'Het verlof is verleend. Dit besluit leest de school straks terug.',
+        seen: 'Het verlof is verleend. Bij de tweede aanvraag leest de school dit besluit terug.',
         outcome: 'granted',
       }),
       apply({
@@ -167,7 +167,7 @@ const vakantieverlof = [
       }),
       object({
         date: '2026-11-01',
-        todo: 'Klik bij het besluit op de tweede aanvraag op Bezwaar maken en dan op Bezwaar indienen.',
+        todo: 'Zoek de tweede aanvraag. Klik bij haar besluit op Bezwaar maken en dan op Bezwaar indienen.',
       }),
       decideObjection({
         date: '2026-11-15',
@@ -185,7 +185,7 @@ const vakantieverlof = [
       object({
         date: '2026-12-01',
         todo: 'De bezwaartermijn van zes weken is voorbij. Klik bij het besluit op Bezwaar maken en dan op Bezwaar indienen.',
-        seen: 'De cel legt het bezwaar gewoon vast: of het te laat is, beslist Awb 7:11, niet het formulier.',
+        seen: 'De cel legt het bezwaar vast, ook al is het te laat. Of het op tijd is, blijkt pas bij Ontvankelijkheid toetsen (Awb 7:11).',
       }),
       decideObjection({
         todo: 'Klik onder Open bezwaren op Ontvankelijkheid toetsen: het bezwaar kwam te laat. Klik op Beslissen op bezwaar.',
@@ -195,7 +195,7 @@ const vakantieverlof = [
   },
   {
     name: 'Tweede bezwaar tegen een vervangen besluit',
-    summary: 'Twee bezwaren tegen hetzelfde besluit: een besluit kan maar één keer worden vervangen.',
+    summary: 'De ouder maakt twee keer bezwaar tegen hetzelfde besluit, en de cel vervangt een besluit maar één keer.',
     steps: [
       apply(),
       decide({ todo: 'Klik op Besluit nemen. Het verlof wordt verleend.', outcome: 'granted' }),
@@ -242,7 +242,7 @@ const vakantieverlof = [
       }),
       object({
         date: '2026-11-01',
-        todo: 'Klik bij de eerste aanvraag (A) bij het besluit op Bezwaar maken en dan op Bezwaar indienen.',
+        todo: 'Zoek de eerste aanvraag (A). Klik bij haar besluit op Bezwaar maken en dan op Bezwaar indienen.',
       }),
       decideObjection({
         date: '2026-11-15',
@@ -254,7 +254,7 @@ const vakantieverlof = [
         n: 2,
         date: '2026-11-20',
         title: 'Bezwaar maken tegen B',
-        todo: 'Klik bij de tweede aanvraag (B) bij het besluit op Bezwaar maken en dan op Bezwaar indienen.',
+        todo: 'Zoek de tweede aanvraag (B). Klik bij haar besluit op Bezwaar maken en dan op Bezwaar indienen.',
       }),
       decideObjection({
         n: 2,
@@ -267,7 +267,7 @@ const vakantieverlof = [
   },
   {
     name: 'Verlof in de kerstvakantie: geweigerd zonder oordeel van het hoofd',
-    summary: 'Verlof in de kerstvakantie weigert de school zelf, zonder het oordeel van het hoofd.',
+    summary: 'Verlof in de kerstvakantie wordt geweigerd, omdat het vakantierooster van de school laat zien dat die dagen in een schoolvakantie vallen.',
     steps: [
       apply({
         todo: 'Vul als eerste verlofdag 21 december 2026 en als laatste verlofdag 23 december 2026 in. Klik op Aanvraag indienen.',
@@ -280,13 +280,13 @@ const vakantieverlof = [
   },
   {
     name: 'Verlof in een schooljaar dat de school nog niet kent: het hoofd oordeelt',
-    summary: 'Voor een schooljaar dat het rooster nog niet kent, vraagt het formulier het hoofd.',
+    summary: 'Staat het schooljaar nog niet in het vakantierooster, dan vraagt het formulier het hoofd of het verlof buiten de schoolvakanties valt.',
     steps: [
       apply({
         todo: 'Vul als eerste verlofdag 20 december 2027 en als laatste verlofdag 22 december 2027 in. Klik op Aanvraag indienen.',
       }),
       decide({
-        todo: 'Het vakantierooster van de school reikt nog niet tot schooljaar 2027–2028. De voorvertoning meldt dat, en het formulier vraagt het nu aan het hoofd. Kies bij "verlof valt buiten schoolvakanties" Nee en klik op Besluit nemen.',
+        todo: 'Het vakantierooster van de school reikt nog niet tot schooljaar 2027–2028. De voorvertoning meldt dat. Het formulier vraagt het hoofd nu of het verlof buiten de schoolvakanties valt. Kies bij "verlof valt buiten schoolvakanties" Nee en klik op Besluit nemen.',
         outcome: 'rejected',
       }),
     ],
@@ -307,7 +307,7 @@ const vakantieverlof = [
       }),
       appeal(),
       judge({
-        todo: 'Klik onder Ingekomen beroepen op Uitspraak doen. De voorbeeldbevindingen zeggen dat de beslissing artikel 7:12, eerste lid, Awb schendt (geen deugdelijke motivering), dat de rechtsgevolgen niet in stand blijven en dat de school tot en met 25 januari 2027 heeft.',
+        todo: 'Klik onder Ingekomen beroepen op Uitspraak doen. Volgens de voorbeeldbevindingen schendt de beslissing artikel 7:12, eerste lid, Awb: de motivering is niet deugdelijk. De rechtsgevolgen blijven niet in stand. De school heeft tot en met 25 januari 2027 voor een nieuwe beslissing.',
       }),
       send({
         todo: 'Klik bij de uitspraak op Toezenden aan OBS De Klimop.',
@@ -318,7 +318,7 @@ const vakantieverlof = [
         tab: 'bestuursorgaan',
         date: '2027-01-18',
         todo: 'Klik onder Na een uitspraak op Heroverwegen, kies bij "specifieke aard beroep ouder" Ja en klik op Opnieuw beslissen op bezwaar.',
-        done: (k) => k.herbeslissingen >= 1,
+        done: (k) => k.redecisions >= 1,
         expect: upheld(),
       },
     ],
@@ -329,8 +329,9 @@ const vakantieverlof = [
 // decision a week later.
 const pDecide = (o) => decide({ date: '2026-10-20', ...o });
 const withBsn = (number, note) => `Verander het BSN in ${number} en klik op Aanvraag indienen. ${note}`;
-const CRITERIA =
-  'Er is geen advies, dus het formulier vraagt de vier criteria een voor een aan het college: kies Ja bij "langdurige loopbeperking" en Nee bij de andere drie. Zet "geneeskundig onderzoek achterwege gelaten" en "bekend dat aanvrager nog steeds voldoet" aan, en klik op Besluit nemen.';
+const ASK_CRITERIA =
+  'Er is geen advies, dus het formulier vraagt de vier criteria één voor één aan het college. Kies Ja bij "langdurige loopbeperking" en Nee bij de andere drie.';
+const CRITERIA = `${ASK_CRITERIA} Zet "geneeskundig onderzoek achterwege gelaten" en "bekend dat aanvrager nog steeds voldoet" aan. Klik op Besluit nemen.`;
 const NO_ADVICE = '999990068';
 
 const gehandicaptenparkeerkaart = [
@@ -377,7 +378,7 @@ const gehandicaptenparkeerkaart = [
   },
   {
     name: 'Ongegrond bezwaar tegen een verstrekking',
-    summary: 'De aanvrager maakt bezwaar tegen de verstrekte kaart, en de heroverweging geeft hetzelfde.',
+    summary: 'De aanvrager maakt bezwaar tegen de verstrekte kaart, en de heroverweging geeft dezelfde uitkomst.',
     steps: [
       apply(),
       pDecide({
@@ -408,7 +409,7 @@ const gehandicaptenparkeerkaart = [
         title: 'Nieuw advies van de GGD',
         tab: 'andere',
         date: '2026-11-10',
-        todo: `De GGD brengt een nieuw advies uit. Vul bij GGD Wilgendaal onder "Vastleggen: Geneeskundig advies uitgebracht" BSN ${NO_ADVICE} en datum onderzoek 10 november 2026 in, zet alleen "langdurige loopbeperking" aan en klik op Vastleggen.`,
+        todo: `De GGD brengt een nieuw advies uit. Vul bij GGD Wilgendaal onder "Vastleggen: Geneeskundig advies uitgebracht" BSN ${NO_ADVICE} en datum onderzoek 10 november 2026 in. Zet alleen "langdurige loopbeperking" aan en klik op Vastleggen.`,
         seen: 'Het nieuwe advies staat in de kroniek van de GGD; de gemeente leest het bij de heroverweging.',
         done: (k) =>
           k.executogrammen('geneeskundig_advies_uitgebracht', { bsn_aanvrager: NO_ADVICE }) >= 2,
@@ -429,9 +430,9 @@ const gehandicaptenparkeerkaart = [
         title: 'Besluit nemen zonder oordeel over het onderzoek',
         tab: 'bestuursorgaan',
         date: '2026-10-20',
-        todo: 'Er is geen advies, dus het formulier vraagt de vier criteria een voor een aan het college. Kies Ja bij "langdurige loopbeperking" en Nee bij de andere drie. Laat "geneeskundig onderzoek heeft plaatsgehad" op Nog niet beoordeeld en klik op Besluit nemen.',
-        done: (k) => refused(/geneeskundig_onderzoek_heeft_plaatsgehad/)(k) || k.beslist.length >= 1,
-        expect: expectation((k) => k.beslist.length === 0, 'hier hoort de cel de stap te weigeren, zonder besluit'),
+        todo: `${ASK_CRITERIA} Laat "geneeskundig onderzoek heeft plaatsgehad" op Nog niet beoordeeld en klik op Besluit nemen.`,
+        done: (k) => refused(/geneeskundig_onderzoek_heeft_plaatsgehad/)(k) || k.decided.length >= 1,
+        expect: expectation((k) => k.decided.length === 0, 'hier hoort de cel de stap te weigeren, zonder besluit'),
       },
     ],
   },

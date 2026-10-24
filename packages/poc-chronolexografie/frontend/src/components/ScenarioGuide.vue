@@ -140,7 +140,6 @@ function icon(i) {
           :key="i"
           size="sm"
           :current="i === p.current"
-          current-type="step"
         >
           <nldd-icon-cell :icon="icon(i).name" :color="icon(i).color" size="20"></nldd-icon-cell>
           <nldd-text-cell

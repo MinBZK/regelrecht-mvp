@@ -107,7 +107,7 @@ export async function hervatten() {
     // Laadde de cel niet (het netwerk, een deploy), dan blijft het spel
     // bewaard voor de volgende herlaad; alleen een spel dat de cel weigert,
     // gaat weg.
-    if (!/the cell did not load/.test(e.message)) vergeet();
+    if (!CELL_NOT_LOADED.test(e.message)) vergeet();
     state.casus = null;
     state.fout = e.message;
   }
@@ -175,6 +175,10 @@ export async function verversen() {
   }
 }
 
+// Errors api.js throws when the cell itself is down, not a refusal.
+const CELL_NOT_LOADED = /^the cell did not load/;
+const CELL_DOWN = /^the cell (did not load|stopped)/;
+
 /**
  * Doe een stap: `actie` is een functie die de API aanroept. Een weigering
  * van de cel komt in `state.fout`; daarna is de kroniek vers. Geeft het
@@ -188,8 +192,10 @@ export async function stap(actie) {
     return antwoord;
   } catch (e) {
     state.fout = e.message;
-    // Kept for the guide, and saved, so a reload still knows the step.
-    state.refusals.push(e.message);
+    // A refusal of the cell is kept for the guide, and saved, so a reload
+    // still knows the step. A cell that did not load or stopped (api.js)
+    // refused nothing.
+    if (!CELL_DOWN.test(e.message)) state.refusals.push(e.message);
     await bewaar().catch(() => {});
     return null;
   }

@@ -60,9 +60,11 @@ function naarKroniek(id) {
   tab.value = 'kroniek';
 }
 
-// In a scenario, starting over also puts the play date back on its first day.
+// In a scenario, starting over begins that scenario again, as the guide's
+// own button does: the play date back on its first day, the tab Aanvrager and
+// the guide open.
 async function opnieuw() {
-  if (state.scenario) await beginScenario(state.scenario);
+  if (state.scenario) await restart();
   else await stap(() => api.reset());
 }
 

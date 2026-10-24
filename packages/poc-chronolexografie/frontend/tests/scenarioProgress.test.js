@@ -59,13 +59,13 @@ describe('counts', () => {
     const k = counts();
     expect(k).toMatchObject({
       aanvragen: 1,
-      beslist: [false],
+      decided: [false],
       bezwaren: 1,
       beslissingen: 2,
       gegrond: 1,
       ongegrond: 1,
       nietOntvankelijk: 0,
-      herbeslissingen: 1,
+      redecisions: 1,
       beroepen: 1,
       uitspraken: 1,
       ontvangsten: 1,
